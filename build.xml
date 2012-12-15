@@ -1,0 +1,57 @@
+<project name="cloudflow" default="all" basedir=".">
+    <description>
+		A simple Java in-process workflow intended to be used by distributed and virtualized workers.
+    </description>
+
+	<property name="version"	value="2012.12"/>
+	<property name="dir.dest"   value="build"/>
+	<property name="dir.doc" 	value="javadoc"/>
+	<property name="dir.src"	value="src"/>
+	<property name="dir.lib"	value="lib"/>
+	<property name="dir.dist"	value="dist"/>
+
+	<path id="classpath">
+		<fileset dir="${dir.lib}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+
+	<target name="clean">
+		<delete dir="${dir.dest}"/>
+		<delete dir="${dir.doc}"/>
+		<delete dir="${dir.dist}"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${dir.dest}"/>
+		<javac srcdir="${dir.src}" destdir="${dir.dest}" 
+				classpathref="classpath" includeantruntime="false"/> 
+	</target>
+
+	<target name="javadoc">
+		<mkdir dir="${dir.doc}"/>
+		<javadoc packagenames="com.hexagrammatic.cloudflow.*"
+			  		sourcepath="${dir.src}"
+			  		classpathref="classpath"
+				  	defaultexcludes="yes"
+           		  	destdir="${dir.doc}"
+					author="true"
+					version="true"
+					use="true"
+					windowtitle="Cloudflow">
+			<doctitle><![CDATA[<h1>Cloudflow</h1>]]></doctitle>
+			<bottom><![CDATA[
+				<i>Copyright &#169; 2012- 
+				Bill Dimmick (me@billdimmick.com) and hexagrammatic.com
+				under the Apache License, Version 2.0</i>]]></bottom>
+		</javadoc>
+	</target>
+
+	<target name="jar">
+		<mkdir dir="${dir.dist}"/>
+		<jar destfile="${dir.dist}/${ant.project.name}-${version}.jar" basedir="${dir.dest}"/>
+        <jar destfile="${dir.dist}/${ant.project.name}-${version}-src.jar" basedir="${dir.dest}"/>
+	</target>
+
+	<target name="all" depends="compile, javadoc, jar"/>
+</project>
