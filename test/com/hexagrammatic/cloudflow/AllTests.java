@@ -7,6 +7,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 	ParameterizedTest.class,
 	StepTest.class,
-	WorkflowTest.class
+	WorkflowTest.class,
+	ParserTest.class
 })
 public class AllTests {}

@@ -15,16 +15,16 @@ public abstract class Step extends Parameterized {
 	private long waitBetweenTries = -1;
 	private TimeUnit waitBetweenTriesUnits = TimeUnit.SECONDS;
 
-	public final String getName() {
+	protected final String getName() {
 		return name;
 	}
 	
-	public final void setName(final String name) {
+	protected final void setName(final String name) {
 		Validate.isTrue(!StringUtils.isBlank(name), "The provided name may not be null or empty.");
 		this.name = name;
 	}
 
-	final void setWorkflow(final Workflow workflow) {
+	protected final void setWorkflow(final Workflow workflow) {
 		this.workflow = workflow;
 	}
 	
@@ -35,7 +35,7 @@ public abstract class Step extends Parameterized {
 	@Override
 	protected Object getParameter(final String key, final Object defaultValue) {		
 		Object result =  super.getParameter(key, defaultValue);
-		if (result == defaultValue) {
+		if (result == defaultValue && workflow!=null) {
 			result = workflow.getParameter(key, defaultValue);
 		}
 		return result;
@@ -55,28 +55,28 @@ public abstract class Step extends Parameterized {
 		setTimeoutUnits((TimeUnit)parsed[1]);
 	}
 	
-	public final long getTimeout() {
+	protected final long getTimeout() {
 		return timeout;
 	}
 		
-	public final void setTimeout(final long timeout) {
+	protected final void setTimeout(final long timeout) {
 		this.timeout = timeout;
 	}
 	
-	public final TimeUnit getTimeoutUnits() {
+	protected final TimeUnit getTimeoutUnits() {
 		return timeoutUnits;
 	}
 	
-	public final void setTimeoutUnits(final TimeUnit timeoutUnits) {
+	protected final void setTimeoutUnits(final TimeUnit timeoutUnits) {
 		Validate.notNull(timeoutUnits, "The provided timeout units may not be null.");
 		this.timeoutUnits = timeoutUnits;
 	}
 	
-	public final int getMaxTries() {
+	protected final int getMaxTries() {
 		return maxTries;
 	}
 	
-	public final void setMaxTries(final int maxTries) {
+	protected final void setMaxTries(final int maxTries) {
 		this.maxTries = maxTries;
 	}
 
@@ -86,22 +86,22 @@ public abstract class Step extends Parameterized {
 		setWaitBetweenTriesUnits((TimeUnit)parsed[1]);
 	}
 	
-	public final long getWaitBetweenTries() {
+	protected final long getWaitBetweenTries() {
 		return waitBetweenTries;
 	}
 	
-	public final void setWaitBetweenTries(long waitBetweenTries) {
+	protected final void setWaitBetweenTries(long waitBetweenTries) {
 		this.waitBetweenTries = waitBetweenTries;
 	}
 	
-	public final TimeUnit getWaitBetweenTriesUnits() {
+	protected final TimeUnit getWaitBetweenTriesUnits() {
 		return waitBetweenTriesUnits;
 	}
 	
-	public final void setWaitBetweenTriesUnits(final TimeUnit waitBetweenTriesUnits) {
+	protected final void setWaitBetweenTriesUnits(final TimeUnit waitBetweenTriesUnits) {
 		Validate.notNull(waitBetweenTriesUnits, "The provided wait between retries units may not be null.");
 		this.waitBetweenTriesUnits = waitBetweenTriesUnits;
 	}
 	
-	public abstract void execute();
+	protected abstract void execute();
 }

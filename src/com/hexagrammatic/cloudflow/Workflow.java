@@ -1,6 +1,8 @@
 package com.hexagrammatic.cloudflow;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,39 +23,45 @@ public class Workflow extends Parameterized {
 		return name;
 	}
 
-	public final void setName(final String name) {		
+	protected final void setName(final String name) {		
 		this.name = name.trim();
 		if (this.name.length()==0) this.name=null;
 	}
 
 	
-	public final void setTimeout(final String timeout) {
+	protected final void setTimeout(final String timeout) {
 		final Object[] parsed = Utils.parseTimeTuple(timeout);
 		setTimeout((Long)parsed[0]);
 		setTimeoutUnits((TimeUnit)parsed[1]);
 	}
 	
-	public long getTimeout() {
+	protected long getTimeout() {
 		return timeout;
 	}
 
-	public void setTimeout(final long timeout) {
+	protected void setTimeout(final long timeout) {
 		this.timeout = timeout;
 	}
 
-	public TimeUnit getTimeoutUnits() {
+	protected TimeUnit getTimeoutUnits() {
 		return timeoutUnits;
 	}
 
-	public void setTimeoutUnits(final TimeUnit timeoutUnits) {
+	protected void setTimeoutUnits(final TimeUnit timeoutUnits) {
 		Validate.notNull(timeoutUnits, "The provided timeout units may not be null.");
 		this.timeoutUnits = timeoutUnits;
 	}
 	
 	public void add(final Step e) {
-		if (steps.add(e)) {
-			e.setWorkflow(this);
+		if (e!=null) {
+			if (steps.add(e)) {
+				e.setWorkflow(this);
+			}
 		}
+	}
+	
+	public Collection<Step> getSteps() {
+		return Collections.unmodifiableCollection(steps);
 	}
 	
 	public final void execute() throws TimeoutException {

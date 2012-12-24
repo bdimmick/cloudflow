@@ -31,6 +31,10 @@ public abstract class Parameterized {
 	protected void addParameter(final String key, final Object value) {
 		current.put(key, value);
 	}
+	
+	protected boolean hasParameter(final String key) {
+		return current.containsKey(key);
+	}
 
 	protected final Object getParameter(final String key) {
 		return getParameter(key, null);
