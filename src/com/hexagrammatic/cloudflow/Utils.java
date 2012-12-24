@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.Validate;
 
 /**
- * Basic utility class.
+ * Utility class.  Provides functions used by various classes.
  * @author Bill Dimmick <me@billdimmick.com>
  */
 public class Utils {
@@ -41,8 +41,8 @@ public class Utils {
 				results[1] = TimeUnit.SECONDS;
 			}
 			return results;
-		} catch (final Exception e) {
-			throw new IllegalArgumentException(String.format("Time period value '%s' is not in the format 'LONG TIMEUNIT'."));
+		} catch (final NumberFormatException e) {
+			throw new IllegalArgumentException(String.format("Time period value '%s' is not in the format 'LONG TIMEUNIT'.", input));
 		}
 
 	}
