@@ -42,6 +42,12 @@ public class WorkflowTest {
 	}
 
 	@Test
+	public void testNullName() {
+		workflow.setName(null);
+		assertNull(workflow.getName());
+	}
+	
+	@Test
 	public void testBasicNameSetting() {
 		final String name = "name";
 		workflow.setName(name);
@@ -57,8 +63,8 @@ public class WorkflowTest {
 	@Test
 	public void testTimeoutAsLongWithUnsetUnits() {
 		final long value = 1;
-		workflow.setTimeout(value);
-		assertEquals(value, workflow.getTimeout());
+		workflow.setTimeoutValue(value);
+		assertEquals(value, workflow.getTimeoutValue());
 		assertEquals(SECONDS, workflow.getTimeoutUnits());
 	}
 
@@ -66,9 +72,9 @@ public class WorkflowTest {
 	public void testTimeoutAsLongWithSetUnits() {
 		final long value = 1;
 		final TimeUnit unit = MINUTES;
-		workflow.setTimeout(value);
+		workflow.setTimeoutValue(value);
 		workflow.setTimeoutUnits(unit);
-		assertEquals(value, workflow.getTimeout());
+		assertEquals(value, workflow.getTimeoutValue());
 		assertEquals(unit, workflow.getTimeoutUnits());
 	}
 
@@ -100,34 +106,24 @@ public class WorkflowTest {
 	@Test
 	public void testSignularUnitTimeoutString() {
 		workflow.setTimeout("1 MINUTE");
-		assertEquals(1, workflow.getTimeout());
+		assertEquals(1, workflow.getTimeoutValue());
 		assertEquals(MINUTES, workflow.getTimeoutUnits());
 	}
 
 	@Test
 	public void testPluralUnitTimeoutString() {
 		workflow.setTimeout("5 HOURS");
-		assertEquals(5, workflow.getTimeout());
+		assertEquals(5, workflow.getTimeoutValue());
 		assertEquals(HOURS, workflow.getTimeoutUnits());
 	}
 
 	@Test
 	public void testNoUnitTimeoutString() {
 		workflow.setTimeout("5");
-		assertEquals(5, workflow.getTimeout());
+		assertEquals(5, workflow.getTimeoutValue());
 		assertEquals(SECONDS, workflow.getTimeoutUnits());		
 	}
 	
-	@Test
-	public void testTimevalueStringSingular() {
-		assertEquals("1 second", workflow.timevalueString(1, SECONDS));
-	}
-
-	@Test
-	public void testTimevalueStringPlural() {
-		assertEquals("2 seconds", workflow.timevalueString(2, SECONDS));
-	}
-
 	@Test
 	public void testSuccessfulSimpleWorkflow() throws TimeoutException {
 		final AtomicBoolean ran = new AtomicBoolean();
@@ -163,7 +159,7 @@ public class WorkflowTest {
 				try { Thread.sleep(1000); } catch (final InterruptedException ie) {}
 			}
 		};
-		workflow.setTimeout(10);
+		workflow.setTimeoutValue(10);
 		workflow.setTimeoutUnits(MILLISECONDS);
 		workflow.add(step);
 		workflow.execute();

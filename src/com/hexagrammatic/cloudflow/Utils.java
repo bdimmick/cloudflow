@@ -7,11 +7,12 @@ import org.apache.commons.lang.Validate;
 /**
  * Utility class.  Provides functions used by various classes.
  * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
  */
 public class Utils {
 	
 	/**
-	 * Provides the ability to convert a string, such as "1 SECOND" or "5 SECONDS", to a tuple consisting
+	 * Provides the ability to convert a String, such as "1 SECOND" or "5 SECONDS", to a tuple consisting
 	 * of a Long for the first value and a TimeUnit for the second value.  The value to convert must consist of
 	 * the following:
 	 * <OL>
@@ -26,6 +27,7 @@ public class Utils {
 	 * @return a tuple containing a Long and a TimeUnit.
 	 */
 	final static Object[] parseTimeTuple(final String input) {
+		//TODO: SUPPORT 'NEVER', 'FOREVER', AND 'NONE' AS A VALUE
 		Validate.notNull(input, "The provided time period string may not be null.");
 		final String [] parts = input.toUpperCase().trim().split("\\s+", 2);
 		final Object[] results = new Object[2]; 
@@ -44,7 +46,27 @@ public class Utils {
 		} catch (final NumberFormatException e) {
 			throw new IllegalArgumentException(String.format("Time period value '%s' is not in the format 'LONG TIMEUNIT'.", input));
 		}
+	}
 
+	
+	/**
+	 * Creates a time tuple string out of the provided parameters.
+	 * @param timeValue the provided time value - may be zero or negative
+	 * @param timeUnit the provided time units - may not be null if timeValue is positive.
+	 * @return "None" if timeValue is not positive; otherwise the two arguments are concatenated together to produce the result.
+	 */
+	final static String createTimeTuple(final long timeValue, final TimeUnit timeUnit) {
+		if (timeValue < 1) return "Never";
+		Validate.notNull(timeUnit, "The provided time units may not be null if the time value is positive.");
+		final StringBuilder builder = new StringBuilder();
+		builder.append(timeValue);
+		builder.append(" ");
+		builder.append(timeUnit.toString().toLowerCase());
+		if (timeValue == 1) {
+			return builder.substring(0, builder.length()-1);
+		} else {
+			return builder.toString();
+		}
 	}
 
 }

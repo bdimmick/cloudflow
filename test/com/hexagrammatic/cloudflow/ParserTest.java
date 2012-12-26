@@ -230,7 +230,7 @@ public class ParserTest {
 		
 		final Workflow workflow = parser.populateWorkflow(object);
 		assertEquals(name, workflow.getName());
-		assertEquals(5, workflow.getTimeout());
+		assertEquals(5, workflow.getTimeoutValue());
 		assertEquals(TimeUnit.HOURS, workflow.getTimeoutUnits());
 		assertEquals(n, workflow.getSteps().size());
 		int i = 0;
@@ -261,7 +261,7 @@ public class ParserTest {
 		
 		final Workflow workflow = parser.parse(object.toString());
 		assertEquals(name, workflow.getName());
-		assertEquals(5, workflow.getTimeout());
+		assertEquals(5, workflow.getTimeoutValue());
 		assertEquals(TimeUnit.HOURS, workflow.getTimeoutUnits());
 		assertEquals(n, workflow.getSteps().size());
 		int i = 0;
@@ -293,7 +293,7 @@ public class ParserTest {
 		
 		final Workflow workflow = parser.parse(new ByteArrayInputStream(object.toString().getBytes()));
 		assertEquals(name, workflow.getName());
-		assertEquals(5, workflow.getTimeout());
+		assertEquals(5, workflow.getTimeoutValue());
 		assertEquals(TimeUnit.HOURS, workflow.getTimeoutUnits());
 		assertEquals(n, workflow.getSteps().size());
 		int i = 0;
@@ -326,7 +326,7 @@ public class ParserTest {
 		final Reader reader = new InputStreamReader(new ByteArrayInputStream(object.toString().getBytes()));
 		final Workflow workflow = parser.parse(reader);
 		assertEquals(name, workflow.getName());
-		assertEquals(5, workflow.getTimeout());
+		assertEquals(5, workflow.getTimeoutValue());
 		assertEquals(TimeUnit.HOURS, workflow.getTimeoutUnits());
 		assertEquals(n, workflow.getSteps().size());
 		int i = 0;

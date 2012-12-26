@@ -66,4 +66,23 @@ public class UtilsTest {
 		assertEquals(NANOSECONDS, values[1]);
 	}
 	
+	@Test
+	public void testCreateTimeTupleSingular() {
+		assertEquals("1 second", Utils.createTimeTuple(1, SECONDS));
+	}
+
+	@Test
+	public void testCreateTimeTuplePlural() {
+		assertEquals("2 seconds", Utils.createTimeTuple(2, SECONDS));
+	}
+
+	@Test
+	public void testCreateTimeTupleNone() {
+		assertEquals("Never", Utils.createTimeTuple(-1, null));
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void testCreateTimeTupleNullUnitsPositiveValue() {
+		Utils.createTimeTuple(1, null);
+	}
 }

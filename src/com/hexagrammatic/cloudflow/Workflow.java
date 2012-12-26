@@ -8,64 +8,160 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.Validate;
 
+/**
+ * Type enclosing a single workflow, consisting of metadata about the workflow and the steps the workflow will be taking upon
+ * execution.
+ * <p>
+ * Workflows are configured with the following properties:
+ * <ul>
+ * 	<li><b>name</b> - the name of the workflow.  May be blank or null
+ *  <li><b>timeout</b> - how long the workflow has to complete <i>all</i> steps before it is considered timed out.
+ * </ul>
+ * Steps may be created manually or via the Parser and added to the workflow via a call to <code>add(Step)</code>.
+ *
+ * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
+ * @see Parser
+ * @see Step
+ */
 public class Workflow extends Parameterized {
+	//TODO: Add stop and pause methods?
+	//TODO: Add insertAfter methods?
 	private ArrayList<Step> steps = new ArrayList<Step>();
 	private String name = null;
 	private long timeout = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
 	
+	/**
+	 * Gets the name of this workflow.
+	 * @return the name of the workflow, as a String; may be <code>null</code>, but not blank.
+	 */
 	public final String getName() {
 		return name;
 	}
 
-	protected final void setName(final String name) {		
-		this.name = name.trim();
+	/**
+	 * Sets the name of the workflow.  If the provided name is <code>null</code>, blank, or all whitespace,
+	 * <code>null</code> is assigned as the name.
+	 * @param name the name to assign - may be null.
+	 */
+	protected final void setName(final String name) {
+		if (name==null) {
+			this.name = null;
+			return;
+		}
+		this.name = name.trim();		
 		if (this.name.length()==0) this.name=null;
 	}
 
-	
+	/**
+	 * Sets the timeout for the entire workflow.  This value consists of a String that contains
+	 * a time tuple, such as "1 SECOND" or "5 HOUR", which is then parsed by <code>Utils.parseTimeTuple</code>
+	 * to set the timeout value and units, respectively.
+	 * @param timeout the timeout value, as a String; providing a null, empty, or unparsable String is considered an error condition.
+	 * @throws IllegalArgumentException if the provided Stirng is null, empty, or unparsable. 
+	 * @see Utils#parseTimeTuple(String)
+	 */
 	protected final void setTimeout(final String timeout) {
 		final Object[] parsed = Utils.parseTimeTuple(timeout);
-		setTimeout((Long)parsed[0]);
+		setTimeoutValue((Long)parsed[0]);
 		setTimeoutUnits((TimeUnit)parsed[1]);
 	}
 	
-	protected long getTimeout() {
+	/**
+	 * Gets the timeout value, which is the numeric component of the overall workflow timeout.
+	 * @return the timeout value, or -1 if the workflow never times out.
+	 */
+	protected long getTimeoutValue() {
 		return timeout;
 	}
 
-	protected void setTimeout(final long timeout) {
+	/**
+	 * Sets the timeout value, which is the numeric component of the overall workflow timeout.
+	 * Providing a negative value indicates that the workflow should never timeout and workflows
+	 * that never time out will always have a timeout value of -1.
+	 * @param timeout the timeout value (See above for special casing about negative values.) 
+	 */
+	protected void setTimeoutValue(final long timeout) {
 		this.timeout = timeout;
+		if (this.timeout < -1) this.timeout = -1; 
+
 	}
 
+	/**
+	 * Gets the timeout units, which is the units component of the overall workflow timeout.
+	 * @return the timeout units as a TimeUnit or <code>null</code> if this workflow has no timeout.
+	 */
 	protected TimeUnit getTimeoutUnits() {
+		if (timeout < 0) return null;
 		return timeoutUnits;
 	}
 
+	/**
+	 * Sets the timeout units, which is the units component of the overall workflow timeout.
+	 * The parameter to this method may never be null; if you want to disable the timeout, use
+	 * <code>setTimeoutValue(-1)</code> instead.
+	 * @param timeoutUnits the timeout units as a TimeUnit; may never be <code>null</code>.
+	 * @see Workflow#setTimeoutValue(long)
+	 * @throws IllegalArgumentException if the provided argument is <code>null</code>.
+	 */
 	protected void setTimeoutUnits(final TimeUnit timeoutUnits) {
 		Validate.notNull(timeoutUnits, "The provided timeout units may not be null.");
 		this.timeoutUnits = timeoutUnits;
 	}
 	
-	public void add(final Step e) {
-		if (e!=null) {
-			if (steps.add(e)) {
-				e.setWorkflow(this);
+	/**
+	 * Adds a Step to this workflow, including making this Workflow the owner of the provided step.
+	 * (Note: this method is not final so implementors may override it for any other special behaviors they 
+	 *  wish to have executed when a step is added to a workflow.  Such implementations should always call
+	 *  <code>super.add(s)</code> somewhere in their implementation.)  
+	 * @param s the Step to add.  If <code>null</code>, no exception is thrown and the call is treated as a no-op.
+	 * @throws IllegalArgumentException if the provided step already belongs to a workflow.
+	 */
+	public void add(final Step s) {
+		if (s!=null) {
+			if (steps.add(s)) {
+				s.setWorkflow(this);
 			}
 		}
 	}
 	
-	public Collection<Step> getSteps() {
+	/**
+	 * Gets the steps in this workflow.
+	 * @return the steps, as an unmodifiable collection.
+	 */
+	public final Collection<Step> getSteps() {
 		return Collections.unmodifiableCollection(steps);
 	}
 	
+	/**
+	 * Executes the workflow.  Executes each step in order, including managing timeouts and retries for the
+	 * steps and workflow.  
+	 * <p>
+	 * Note: Threads executing this workflow and its steps are <i>always</i> daemon threads. 
+	 * @throws TimeoutException if a single step times out without any remaining retries or the whole workflow times out
+	 * @throws RuntimeException thrown if a step decides to 'leak' a RuntimeException out of its <code>execute()</code> method.  
+	 */
 	public final void execute() throws TimeoutException {
-		final ExecutorService executor = Executors.newFixedThreadPool(2);
+		final ExecutorService executor = Executors.newFixedThreadPool(2,
+					new ThreadFactory() {
+						@Override
+						public Thread newThread(final Runnable r) {
+							final Thread t = new Thread(r);
+							t.setDaemon(true);
+							t.setName(String.format("Workflow %s(Thread#%s)", 
+													getName() == null ? "" : String.format("'%s' ", getName()), t.getId()));
+							return t;
+						}
+					}
+				);
+		
 		final Callable<Void> call = new Callable<Void>() {			
 			@Override
 			public Void call() throws Exception {
@@ -77,20 +173,20 @@ public class Workflow extends Parameterized {
 		final Future<Void> result = executor.submit(call);
 		
 		try {
-			if (getTimeout() > 0) {
-				result.get(getTimeout(), getTimeoutUnits());
+			if (getTimeoutValue() > 0) {
+				result.get(getTimeoutValue(), getTimeoutUnits());
 			} else {
 				result.get();
 			}
-		} catch (TimeoutException te) {
+		} catch (final TimeoutException te) {
 			String message;
 			if (getName() == null) {
-				message = String.format("Execution of workflow timed out after %s", timevalueString(getTimeout(), getTimeoutUnits()));
+				message = String.format("Execution of workflow timed out after %s", Utils.createTimeTuple(getTimeoutValue(), getTimeoutUnits()));
 			} else {
-				message = String.format("Execution of workflow '%s' timed out after %s", getName(), timevalueString(getTimeout(), getTimeoutUnits()));
+				message = String.format("Execution of workflow '%s' timed out after %s", getName(), Utils.createTimeTuple(getTimeoutValue(), getTimeoutUnits()));
 			}
 			throw new TimeoutException(message);
-		} catch (ExecutionException ee) {
+		} catch (final ExecutionException ee) {
 			Throwable cause = ee.getCause();
 			while (cause instanceof ExecutionException) {
 				cause = cause.getCause();
@@ -102,11 +198,18 @@ public class Workflow extends Parameterized {
 			} else {
 				throw new IllegalStateException("Unexpected non-runtime exception encountered.", cause);
 			}
-		} catch (InterruptedException ie) {
+		} catch (final InterruptedException ie) {
 			Thread.currentThread().interrupt();
 		}
 	}
 	
+	/**
+	 * Executes the steps in order, inlcuding handling timeouts and retries.
+	 * @param executor the executor in which to execute the steps; never null.
+	 * @throws TimeoutException if a step times out without remaining retries.
+	 * @throws ExecutionException if a step lets an unhandled exeception leak out of its <code>execute()</code> method.
+	 * @throws InterruptedException if the step is interrupted while being executed.
+	 */
 	private final void executeSteps(final ExecutorService executor) throws TimeoutException, ExecutionException, InterruptedException {
 		for (final Step step: steps) {
 			int trynum = 0;
@@ -135,7 +238,7 @@ public class Workflow extends Parameterized {
 					result.cancel(true);
 					if (trynum == step.getMaxTries()) {
 						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
-																	timevalueString(step.getTimeout(), step.getTimeoutUnits())));
+																	Utils.createTimeTuple(step.getTimeout(), step.getTimeoutUnits())));
 					}
 				} catch (ExecutionException ee) {
 					if (trynum == step.getMaxTries()) throw ee;
@@ -147,22 +250,16 @@ public class Workflow extends Parameterized {
 		}
 	}
 	
+	/**
+	 * Perform any required sleeping between a failed execution of a step and its retry.  Implementors
+	 * may choose to override this method to inject hooks that may happen before or after waiting, but
+	 * such implementations should always call <code>super.retryWait(Step)</code>.
+	 * @param step the step that will be retried; never <code>null</code>
+	 * @throws InterruptedException if the sleep is interrupted before it completes.
+	 */
 	protected void retryWait(final Step step) throws InterruptedException {
 		if (step.getWaitBetweenTries() > 0) {
 			step.getWaitBetweenTriesUnits().sleep(step.getWaitBetweenTries());
 		}		
-	}
-	
-	final String timevalueString(final long t, final TimeUnit u) {
-		if (t < 1) return "none";
-		final StringBuilder builder = new StringBuilder();
-		builder.append(t);
-		builder.append(" ");
-		builder.append(u.toString().toLowerCase());
-		if (t == 1) {
-			return builder.substring(0, builder.length()-1);
-		} else {
-			return builder.toString();
-		}
-	}
+	}	
 }

@@ -6,7 +6,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
 public abstract class Step extends Parameterized {
-
+	//TODO: Implement *all* of the methods from Parameterized	
+	
 	private String name = getClass().getSimpleName();
 	private Workflow workflow = null;
 	private long timeout = -1;
@@ -25,6 +26,7 @@ public abstract class Step extends Parameterized {
 	}
 
 	protected final void setWorkflow(final Workflow workflow) {
+		Validate.isTrue(workflow==null || this.workflow==null,"Attempting to assign a workflow to a step that already has a workflow assigned.");		
 		this.workflow = workflow;
 	}
 	
