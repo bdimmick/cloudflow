@@ -18,7 +18,7 @@ import org.apache.commons.lang.Validate;
  */
 public abstract class Parameterized {
 	//TODO: Refactor this class to make it thread-safe	
-	private HashMap<String, LiteStack> values = new HashMap<String, LiteStack>();
+	private HashMap<String, LiteLinkedList> values = new HashMap<String, LiteLinkedList>();
     
     /**
      * Snapshots the current parameters.  
@@ -28,9 +28,9 @@ public abstract class Parameterized {
      * <code>super.snapshot()</code>.
      */
     protected void snapshot() {
-    	for (final Map.Entry<String, LiteStack> entry: values.entrySet()) {
-    		final LiteStack current = entry.getValue();
-    		final LiteStack next = new LiteStack(current);
+    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
+    		final LiteLinkedList current = entry.getValue();
+    		final LiteLinkedList next = new LiteLinkedList(current);
     		next.setValue(current.getValue());
     		entry.setValue(next);
     	}
@@ -44,8 +44,8 @@ public abstract class Parameterized {
      */
     protected void rollback() {
     	final ArrayList<String> removals = new ArrayList<String>();
-    	for (final Map.Entry<String, LiteStack> entry: values.entrySet()) {
-    		final LiteStack prev = entry.getValue().prev();
+    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
+    		final LiteLinkedList prev = entry.getValue().next();
     		if (prev == null) {
     			removals.add(entry.getKey());
     		} else {
@@ -65,9 +65,9 @@ public abstract class Parameterized {
      */
 	protected void addParameter(final String key, final Object value) {
 		Validate.notNull(key, "The provided key may not be null.");
-		LiteStack stack = values.get(key);
+		LiteLinkedList stack = values.get(key);
 		if (stack == null) {
-			stack = new LiteStack();
+			stack = new LiteLinkedList();
 			values.put(key, stack);
 		}
 		stack.setValue(value);
@@ -79,7 +79,7 @@ public abstract class Parameterized {
 	 */
 	protected void removeParameter(final String key) {
 		if (key == null) return;
-		final LiteStack stack = values.get(key);
+		final LiteLinkedList stack = values.get(key);
 		if (stack != null) {
 			stack.setValue(null);
 		}		
@@ -92,7 +92,7 @@ public abstract class Parameterized {
 	 */
 	protected boolean hasParameter(final String key) {
 		if (key == null) return false;
-		final LiteStack stack = values.get(key);
+		final LiteLinkedList stack = values.get(key);
 		if (stack == null) return false;
 		if (stack.getValue() == null) return false;
 		return true;
@@ -116,7 +116,7 @@ public abstract class Parameterized {
 	 */
 	protected Object getParameter(final String key, final Object defaultValue) {
 		if (key == null) return defaultValue;
-		final LiteStack stack = values.get(key);
+		final LiteLinkedList stack = values.get(key);
 		return stack == null || stack.getValue() == null ? defaultValue : stack.getValue();
 	}
 	
@@ -127,21 +127,21 @@ public abstract class Parameterized {
 	 */
 	protected int numVersions(final String key) {
 		if (key == null) return 0;
-		final LiteStack stack = values.get(key);
+		final LiteLinkedList stack = values.get(key);
 		if (stack == null) return 0;
-		return stack.depth();
+		return stack.length();
 	}
 	
-	private static final class LiteStack {
+	private static final class LiteLinkedList {
 		private Object value;
-		private final LiteStack prev;
+		private final LiteLinkedList next;
 		
-		public LiteStack() {
+		public LiteLinkedList() {
 			this(null);
 		}
 		
-		public LiteStack(final LiteStack prev) {
-			this.prev = prev;
+		public LiteLinkedList(final LiteLinkedList prev) {
+			this.next = prev;
 		}
 	
 		public Object getValue() {
@@ -152,16 +152,16 @@ public abstract class Parameterized {
 			this.value = value;
 		}
 
-		public LiteStack prev() {
-			return prev;
+		public LiteLinkedList next() {
+			return next;
 		}
 		
-		public int depth() {
+		public int length() {
 			final int k = getValue() == null ? 0 : 1;
-			if (prev == null) {
+			if (next == null) {
 				return k;
 			}
-			return k + prev.depth();
+			return k + next.length();
 		}
 	}
 }
