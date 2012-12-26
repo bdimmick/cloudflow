@@ -5,11 +5,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.Validate;
 
 /**
- * Utility class.  Provides functions used by various classes.
+ * Utility class, providing functions used by various classes that don't belong as member functions.
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12
  */
-public class Utils {
+public abstract class Utils {
 	
 	/**
 	 * Provides the ability to convert a String, such as "1 SECOND" or "5 SECONDS", to a tuple consisting

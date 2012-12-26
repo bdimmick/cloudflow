@@ -5,9 +5,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
-public abstract class Step extends Parameterized {
-	//TODO: Implement *all* of the methods from Parameterized	
-	
+/**
+ * 
+ * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12 
+ */
+public abstract class Step extends Parameterized {	
 	private String name = getClass().getSimpleName();
 	private Workflow workflow = null;
 	private long timeout = -1;
@@ -44,11 +47,41 @@ public abstract class Step extends Parameterized {
 	}
 	
 	@Override	
-	protected void addParameter(String key, Object value) {
+	protected void addParameter(final String key, final Object value) {
 		super.addParameter(key, value);
 		if (workflow != null) {			
 			workflow.addParameter(key, value);
 		}
+	}
+	
+	@Override
+	protected boolean hasParameter(final String key) {
+		if (!super.hasParameter(key)) {
+			if (workflow != null) {
+				return workflow.hasParameter(key);
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	@Override
+	protected void snapshot() {
+		super.snapshot();
+		if (workflow!=null) workflow.snapshot();
+	}
+	
+	@Override
+	protected void rollback() {		
+		super.rollback();
+		if (workflow!=null) workflow.rollback();
+	}
+	
+	@Override
+	protected void removeParameter(final String key) {
+		super.removeParameter(key);
+		if (workflow!=null) workflow.removeParameter(key);
 	}
 	
 	public final void setTimeout(final String timeout) {		

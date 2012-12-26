@@ -214,7 +214,6 @@ public class Workflow extends Parameterized {
 		for (final Step step: steps) {
 			int trynum = 0;
 			step.snapshot();
-			this.snapshot();
 			while (trynum < step.getMaxTries()) {
 				trynum++;
 				final Callable<Void> call = new Callable<Void>() {			
@@ -245,7 +244,6 @@ public class Workflow extends Parameterized {
 				}				
 				retryWait(step);
 				step.rollback();
-				this.rollback();
 			}
 		}
 	}
