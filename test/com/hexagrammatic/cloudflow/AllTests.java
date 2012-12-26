@@ -9,6 +9,6 @@ import org.junit.runners.Suite;
 	ParameterizedTest.class,
 	StepTest.class,
 	WorkflowTest.class,
-	ParserTest.class
+	JsonParserTest.class
 })
 public class AllTests {}

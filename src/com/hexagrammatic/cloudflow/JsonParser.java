@@ -5,31 +5,69 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Map;
 
+import org.apache.commons.lang.Validate;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-public class Parser {
-
-	private ClassLoader classLoader = Parser.class.getClassLoader();
+/**
+ * Type to parse and create workflow instances from various input types.  The expected data is JSON
+ * data in the work
+ * <p>
+ * In some cases, this parser will try to ignore or warn on parse errors and try to continue marshalling
+ *   
+ * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
+ */
+public class JsonParser {
+	//TODO: Enable 'strict' mode.
 	
+	private ClassLoader classLoader = JsonParser.class.getClassLoader();
+	
+	/**
+	 * Set the classloader to use when resolving Steps.  If unset,
+	 * the same classloader that loaded <code>Parser</code> is used.
+	 * @param cl the classloader - may not be null
+	 */
 	public void setClassLoader(final ClassLoader cl) {
+		Validate.notNull(cl, "The provided classloader may not be null.");
 		this.classLoader = cl;
 	}
 	
+	/**
+	 * Parses a workflow from a Reader. 
+	 * @param reader the reader - may not be null
+	 * @return the marshalled workflow
+	 * @throws WorkflowCreationException thrown if creating the workflow fails
+	 */	
 	public Workflow parse(final Reader reader) throws WorkflowCreationException {
-		final JsonParser parser = new JsonParser();
+		Validate.notNull(reader, "The provided reader may not be null.");
+		final com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
 		return populateWorkflow(parser.parse(reader));
 	}
-	
+
+	/**
+	 * Parses a workflow from an InputStream. 
+	 * @param stream the input stream - may not be null
+	 * @return the marshalled workflow
+	 * @throws WorkflowCreationException thrown if creating the workflow fails
+	 */	
 	public Workflow parse(final InputStream stream) throws WorkflowCreationException {
-		final JsonParser parser = new JsonParser();
+		Validate.notNull(stream, "The provided input stream may not be null.");
+		final com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
 		return populateWorkflow(parser.parse(new InputStreamReader(stream)));
 	}
 	
+	/**
+	 * Parses a workflow from a String. 
+	 * @param data the input string - may not be null
+	 * @return the marshalled workflow
+	 * @throws WorkflowCreationException thrown if creating the workflow fails
+	 */		
 	public Workflow parse(final String data) throws WorkflowCreationException {
-		final JsonParser parser = new JsonParser();
+		Validate.notNull(data, "The provided data may not be null.");
+		final com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
 		return populateWorkflow(parser.parse(data));		
 	}
 	

@@ -11,6 +11,7 @@ import org.apache.commons.lang.Validate;
  * @since 2012.12 
  */
 public abstract class Step extends Parameterized {	
+	//TODO: Enable 'skip on failure' mode
 	private String name = getClass().getSimpleName();
 	private Workflow workflow = null;
 	private long timeout = -1;
@@ -19,15 +20,27 @@ public abstract class Step extends Parameterized {
 	private long waitBetweenTries = -1;
 	private TimeUnit waitBetweenTriesUnits = TimeUnit.SECONDS;
 
+	/**
+	 * Gets the name of this step.
+	 * @return the name of the step; if unset, the 'simple name' of the class is used
+	 */
 	protected final String getName() {
 		return name;
 	}
 	
+	/**
+	 * Sets the name of the step
+	 * @param name the name of the step - may not be blank or empty
+	 */
 	protected final void setName(final String name) {
 		Validate.isTrue(!StringUtils.isBlank(name), "The provided name may not be null or empty.");
 		this.name = name;
 	}
 
+	/**
+	 * Sets the workflow that 'owns' this step instance.
+	 * @param workflow the workflow - may not be null
+	 */
 	protected final void setWorkflow(final Workflow workflow) {
 		Validate.isTrue(workflow==null || this.workflow==null,"Attempting to assign a workflow to a step that already has a workflow assigned.");		
 		this.workflow = workflow;

@@ -19,18 +19,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.hexagrammatic.cloudflow.Parser.WorkflowCreationException;
+import com.hexagrammatic.cloudflow.JsonParser.WorkflowCreationException;
 
 /**
  * @author Bill Dimmick <me@billdimmick.com>
  */
-public class ParserTest {
+public class JsonParserTest {
 
-	private Parser parser;
+	private JsonParser parser;
 	
 	@Before
 	public void setUp() throws Exception {
-		parser = new Parser();
+		parser = new JsonParser();
 	}
 	
 	@Test
@@ -50,7 +50,7 @@ public class ParserTest {
 		final Step step = parser.populateStep(obj);
 		assertNotNull(step);
 		assertEquals(SimpleStep.class, step.getClass());
-		assertTrue(step.hasParameter("parameter"));
+		assertFalse(step.hasParameter("parameter"));
 		assertNull(step.getParameter("parameter"));
 	}
 
@@ -63,7 +63,7 @@ public class ParserTest {
 		final Step step = parser.populateStep(obj);
 		assertNotNull(step);
 		assertEquals(SimpleStep.class, step.getClass());
-		assertTrue(step.hasParameter("parameter"));
+		assertFalse(step.hasParameter("parameter"));
 		assertNull(step.getParameter("parameter"));
 	}
 
