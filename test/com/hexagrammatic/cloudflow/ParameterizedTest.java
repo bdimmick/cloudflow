@@ -69,9 +69,11 @@ public class ParameterizedTest {
 		target.addParameter(key, value);
 		assertTrue(target.hasParameter(key));
 		assertEquals(value, target.getParameter(key));
+		assertEquals(1, target.numVersions(key));
 		target.removeParameter(key);
 		assertTrue(!target.hasParameter(key));
 		assertNull(target.getParameter(key));
+		assertEquals(0, target.numVersions(key));
 		final Object defaultValue = new Object();
 		assertEquals(defaultValue, target.getParameter(key, defaultValue));
 	}

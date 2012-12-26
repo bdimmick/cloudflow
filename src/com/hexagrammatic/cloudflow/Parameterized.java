@@ -157,10 +157,11 @@ public abstract class Parameterized {
 		}
 		
 		public int depth() {
+			final int k = getValue() == null ? 0 : 1;
 			if (prev == null) {
-				return 1;
+				return k;
 			}
-			return 1 + prev.depth();
+			return k + prev.depth();
 		}
 	}
 }
