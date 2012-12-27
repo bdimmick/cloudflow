@@ -136,15 +136,15 @@ public abstract class Step extends Parameterized {
 	 */
 	public final void setTimeout(final String timeout) {		
 		final Object[] parsed = Utils.parseTimeTuple(timeout);
-		setTimeout((Long)parsed[0]);
+		setTimeoutValue((Long)parsed[0]);
 		setTimeoutUnits((TimeUnit)parsed[1]);
 	}
 	
-	protected final long getTimeout() {
+	protected final long getTimeoutValue() {
 		return timeout;
 	}
 		
-	protected final void setTimeout(final long timeout) {
+	protected final void setTimeoutValue(final long timeout) {
 		this.timeout = timeout;
 	}
 	

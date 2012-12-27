@@ -46,8 +46,8 @@ public class StepTest {
 	@Test
 	public void testTimeoutAsLongWithUnsetUnits() {
 		final long value = 1;
-		step.setTimeout(value);
-		assertEquals(value, step.getTimeout());
+		step.setTimeoutValue(value);
+		assertEquals(value, step.getTimeoutValue());
 		assertEquals(SECONDS, step.getTimeoutUnits());
 	}
 
@@ -55,9 +55,9 @@ public class StepTest {
 	public void testTimeoutAsLongWithSetUnits() {
 		final long value = 1;
 		final TimeUnit unit = MINUTES;
-		step.setTimeout(value);
+		step.setTimeoutValue(value);
 		step.setTimeoutUnits(unit);
-		assertEquals(value, step.getTimeout());
+		assertEquals(value, step.getTimeoutValue());
 		assertEquals(unit, step.getTimeoutUnits());
 	}
 
@@ -89,21 +89,21 @@ public class StepTest {
 	@Test
 	public void testSignularUnitTimeoutString() {
 		step.setTimeout("1 MINUTE");
-		assertEquals(1, step.getTimeout());
+		assertEquals(1, step.getTimeoutValue());
 		assertEquals(MINUTES, step.getTimeoutUnits());
 	}
 
 	@Test
 	public void testPluralUnitTimeoutString() {
 		step.setTimeout("5 HOURS");
-		assertEquals(5, step.getTimeout());
+		assertEquals(5, step.getTimeoutValue());
 		assertEquals(HOURS, step.getTimeoutUnits());
 	}
 
 	@Test
 	public void testNoUnitTimeoutString() {
 		step.setTimeout("5");
-		assertEquals(5, step.getTimeout());
+		assertEquals(5, step.getTimeoutValue());
 		assertEquals(SECONDS, step.getTimeoutUnits());		
 	}
 	

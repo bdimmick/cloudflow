@@ -227,8 +227,8 @@ public class Workflow extends Parameterized {
 				final Future<Void> result = executor.submit(call);
 				
 				try {
-					if (step.getTimeout() > 0) {
-						result.get(step.getTimeout(), step.getTimeoutUnits());
+					if (step.getTimeoutValue() > 0) {
+						result.get(step.getTimeoutValue(), step.getTimeoutUnits());
 					} else {
 						result.get();
 					}
@@ -237,7 +237,7 @@ public class Workflow extends Parameterized {
 					result.cancel(true);
 					if (trynum == step.getMaxTries()) {
 						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
-																	Utils.createTimeTuple(step.getTimeout(), step.getTimeoutUnits())));
+																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 					}
 				} catch (ExecutionException ee) {
 					if (trynum == step.getMaxTries()) throw ee;

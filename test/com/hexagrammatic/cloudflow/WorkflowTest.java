@@ -145,7 +145,7 @@ public class WorkflowTest {
 				try { Thread.sleep(1000); } catch (final InterruptedException ie) {}
 			}
 		};
-		step.setTimeout(10);
+		step.setTimeoutValue(10);
 		step.setTimeoutUnits(MILLISECONDS);
 		workflow.add(step);
 		workflow.execute();
@@ -230,7 +230,7 @@ public class WorkflowTest {
 				
 			}
 		};
-		step.setTimeout(10);
+		step.setTimeoutValue(10);
 		step.setTimeoutUnits(MILLISECONDS);
 		step.setMaxTries(2);
 		step.setWaitBetweenTries(10);
@@ -256,7 +256,7 @@ public class WorkflowTest {
 				}
 			}
 		};
-		step.setTimeout(10);
+		step.setTimeoutValue(10);
 		step.setTimeoutUnits(MILLISECONDS);
 		step.setMaxTries(2);
 		workflow.add(step);
