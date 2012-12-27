@@ -212,9 +212,9 @@ public class Workflow extends Parameterized {
 	 */
 	private final void executeSteps(final ExecutorService executor) throws TimeoutException, ExecutionException, InterruptedException {
 		for (final Step step: steps) {
-			int trynum = 0;
-			step.snapshot();
-			while (trynum < step.getMaxTries()) {
+			int trynum = -1;
+			while (trynum < step.getMaxRetries()) {
+				step.snapshot();
 				trynum++;
 				final Callable<Void> call = new Callable<Void>() {			
 					@Override
@@ -235,12 +235,12 @@ public class Workflow extends Parameterized {
 					return;
 				} catch (TimeoutException te) {
 					result.cancel(true);
-					if (trynum == step.getMaxTries()) {
+					if (trynum == step.getMaxRetries()) {
 						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
 																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 					}
 				} catch (ExecutionException ee) {
-					if (trynum == step.getMaxTries()) throw ee;
+					if (trynum == step.getMaxRetries()) throw ee;
 				}				
 				retryWait(step);
 				step.rollback();

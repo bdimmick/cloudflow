@@ -116,15 +116,15 @@ public class JsonParserTest {
 	}
 
 	@Test
-	public void testStepCreationWithMaxTriesAssignment() throws Exception {	
+	public void testStepCreationWithMaxRetriesAssignment() throws Exception {	
 		final int value = 5;
 		final JsonObject obj = new JsonObject();
 		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
-		obj.add("maxTries", new JsonPrimitive(value));
+		obj.add("maxRetries", new JsonPrimitive(value));
 		final Step step = parser.populateStep(obj);
 		assertNotNull(step);
 		assertEquals(SimpleStep.class, step.getClass());
-		assertEquals(value, step.getMaxTries());		
+		assertEquals(value, step.getMaxRetries());		
 	}
 
 	@Test

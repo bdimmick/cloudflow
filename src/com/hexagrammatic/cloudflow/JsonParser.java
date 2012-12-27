@@ -234,12 +234,12 @@ public class JsonParser {
 				step = (Step)source.newInstance();
 				pre(step);
 				
-				JsonElement je = obj.get("maxTries");
+				JsonElement je = obj.get("maxRetries");
 				if (je!=null) {
 					if (je.isJsonPrimitive()) {
-						step.setMaxTries(je.getAsInt());
-					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'maxTries' value."));
-					obj.remove("maxTries");
+						step.setMaxRetries(je.getAsInt());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'maxRetries' value."));
+					obj.remove("maxRetries");
 				}
 				
 				je = obj.get("name");

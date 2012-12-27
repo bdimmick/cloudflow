@@ -110,8 +110,8 @@ public class StepTest {
 	@Test
 	public void testSetMaxTries() {
 		final int value = 12;
-		step.setMaxTries(value);
-		assertEquals(value, step.getMaxTries());
+		step.setMaxRetries(value);
+		assertEquals(value, step.getMaxRetries());
 	}
 	
 	@Test

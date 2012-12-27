@@ -17,7 +17,7 @@ public abstract class Step extends Parameterized {
 	private Workflow workflow = null;
 	private long timeout = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
-	private int maxTries = 1;
+	private int maxRetries = 0;
 	private long waitBetweenTries = -1;
 	private TimeUnit waitBetweenTriesUnits = TimeUnit.SECONDS;
 
@@ -140,29 +140,65 @@ public abstract class Step extends Parameterized {
 		setTimeoutUnits((TimeUnit)parsed[1]);
 	}
 	
+	/**
+	 * Gets the timeout value, which is the numeric component of the overall step timeout.
+	 * @return the timeout value, or -1 if the step never times out.
+	 */
 	protected final long getTimeoutValue() {
 		return timeout;
 	}
 		
-	protected final void setTimeoutValue(final long timeout) {
+	/**
+	 * Sets the timeout value, which is the numeric component of the overall step timeout.
+	 * Providing a negative value indicates that the step should never timeout and steps
+	 * that never time out will always have a timeout value of -1.
+	 * @param timeout the timeout value (See above for special casing about negative values.) 
+	 */
+	protected void setTimeoutValue(final long timeout) {
 		this.timeout = timeout;
+		if (this.timeout < -1) this.timeout = -1; 
+
 	}
 	
+	/**
+	 * Gets the timeout units, which is the units component of the overall step timeout.
+	 * @return the timeout units as a TimeUnit or <code>null</code> if this step has no timeout.
+	 */
 	protected final TimeUnit getTimeoutUnits() {
+		if (timeout < 0) return null;
 		return timeoutUnits;
 	}
 	
+	/**
+	 * Sets the timeout units, which is the units component of the overall step timeout.
+	 * The parameter to this method may never be null; if you want to disable the timeout, use
+	 * <code>setTimeoutValue(-1)</code> instead.
+	 * @param timeoutUnits the timeout units as a TimeUnit; may never be <code>null</code>.
+	 * @see Step#setTimeoutValue(long)
+	 * @throws IllegalArgumentException if the provided argument is <code>null</code>.
+	 */
 	protected final void setTimeoutUnits(final TimeUnit timeoutUnits) {
 		Validate.notNull(timeoutUnits, "The provided timeout units may not be null.");
 		this.timeoutUnits = timeoutUnits;
 	}
 	
-	protected final int getMaxTries() {
-		return maxTries;
+	/**
+	 * Get the maximum number of times the step will be retried after failure.  If the result
+	 * is less than 1, this step is never retried.
+	 * @return the number of times the step will be retried after failure - possibly zero or negative.
+	 */
+	protected final int getMaxRetries() {
+		return maxRetries;
 	}
-	
-	protected final void setMaxTries(final int maxTries) {
-		this.maxTries = maxTries;
+
+	/**
+	 * Set the maximum number of times the step will be retried after failure.  If this is set
+	 * to less than 1, this step is never retried in workflow execution.  If unset, the default value
+	 * is 0.
+	 * @param maxRetries the number of times to try to execute this step - if less than 1, the step is never retried 
+	 */
+	protected final void setMaxRetries(final int maxRetries) {
+		this.maxRetries = maxRetries;
 	}
 
 	public final void setWaitBetweenTries(final String wait) {

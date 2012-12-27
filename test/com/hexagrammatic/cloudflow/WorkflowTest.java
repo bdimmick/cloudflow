@@ -190,7 +190,7 @@ public class WorkflowTest {
 				
 			}
 		};
-		step.setMaxTries(2);
+		step.setMaxRetries(2);
 		workflow.add(step);
 		workflow.execute();
 		assertEquals(2, count.get());
@@ -209,7 +209,7 @@ public class WorkflowTest {
 				
 			}
 		};
-		step.setMaxTries(2);
+		step.setMaxRetries(2);
 		step.setWaitBetweenTries(10);
 		step.setWaitBetweenTriesUnits(MILLISECONDS);
 		workflow.add(step);
@@ -232,7 +232,7 @@ public class WorkflowTest {
 		};
 		step.setTimeoutValue(10);
 		step.setTimeoutUnits(MILLISECONDS);
-		step.setMaxTries(2);
+		step.setMaxRetries(2);
 		step.setWaitBetweenTries(10);
 		step.setWaitBetweenTriesUnits(MILLISECONDS);
 		workflow.add(step);
@@ -258,7 +258,7 @@ public class WorkflowTest {
 		};
 		step.setTimeoutValue(10);
 		step.setTimeoutUnits(MILLISECONDS);
-		step.setMaxTries(2);
+		step.setMaxRetries(2);
 		workflow.add(step);
 		workflow.execute();
 	}
