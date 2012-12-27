@@ -27,7 +27,7 @@ import org.apache.commons.lang.Validate;
  *
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12
- * @see Parser
+ * @see JsonParser
  * @see Step
  */
 public class Workflow extends Parameterized {

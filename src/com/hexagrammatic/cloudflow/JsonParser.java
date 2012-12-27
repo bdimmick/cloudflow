@@ -12,10 +12,64 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * Type to parse and create workflow instances from various input types.  The expected data is JSON
- * data in the work
+ * Type to parse and create workflow instances from various input types in JSON format.  The expected JSON data format 
+ * may be in one of the following formats, with required keys in <i>italics</i>:
  * <p>
- * In some cases, this parser will try to ignore or warn on parse errors and try to continue marshalling
+ * A JSON Array, consisting of only the steps in the workflow:
+ * <pre>
+ * [
+ *  {
+ *    '<i>class</i>':'some.class.name.that.extends.Step',
+ *    'name':'step name',
+ *    'timeout':'step timeout as a time tuple',
+ *    'maxTries':&lt;max tries as a number&gt;
+ *    'waitBetweenTries':'wait time as a time tuple', 
+ *    'param1':'paramValue1',
+ *    'param2':'paramValue2',
+ *    'param3':'paramValue3',
+ *    ...
+ *    'paramN':'paramValueN',
+ *  },
+ *  ...
+ * ]
+ * </pre>
+ * <p>
+ * A JSON Object, consisting of metadata and configuration for the workflow and its steps:
+ * <pre>
+ * {
+ *   'name':'workflow name',
+ *   'timeout':'workflow timeout as a time tuple',
+ *   'steps': [
+ *              {
+ *                '<i>class</i>':'some.class.name.that.extends.Step',
+ *                'name':'step name',
+ *                'timeout':'step timeout as a time tuple',
+ *                'maxTries':&lt;max tries as a number&gt;
+ *                'waitBetweenTries':'wait time as a time tuple', 
+ *                'step_param1':'paramValue1',
+ *                'step_param2':'paramValue2',
+ *                'step_param3':'paramValue3',
+ *                ...
+ *                'step_paramN':'paramValueN',
+ *              },
+ *              ...
+ *            ],
+ *  'workflow_param1':'paramValue1',
+ *  'workflow_param2':'paramValue2',
+ *  'workflow_param3':'paramValue3',
+ *  ...
+ *  'workflow_paramN':'paramValueN',            
+ * }
+ * </pre>
+ * <p>
+ * In some cases, this parser will try to ignore or warn on type errors (e.g. expecting a JSON array and finding a JSON string primitive) and 
+ * try to continue marshalling nonetheless.  This may result in incomplete or faulty workflows.  If you don't want the parser to ignore these type
+ * errors, please feel free to turn on <code>strict</code> mode, which will result in <code>WorkflowCreationException</code>s when such cases are encountered. 
+ * <p>
+ * In the case that you want to load classes for Steps from another classloader, feel free to use the <code>setClassLoader</code> method to set the specific
+ * classloader that loads the Step classes.  This may be useful in some cases where the Step bytecode is defined outside the initial Java classpath and could
+ * be dyanmically updated, such as hosting the classes in a version control system or a distributed filesystem, allowing them to be updated without restarting
+ * the JVM.
  *   
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12
@@ -93,6 +147,21 @@ public class JsonParser {
 				populateSteps(steps.getAsJsonArray(), workflow);
 				obj.remove("steps");
 			}
+			
+			for (final Map.Entry<String, JsonElement> entry: obj.entrySet()) {						
+				JsonElement element = entry.getValue();						
+				if (element == null) {
+					workflow.addParameter(entry.getKey(), null);
+				} else if (element.isJsonNull()) {
+					workflow.addParameter(entry.getKey(), null);
+				} else if (element.isJsonPrimitive()) {
+					workflow.addParameter(entry.getKey(), element.getAsString());
+				} else if (element.isJsonArray()) {
+					throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on workflow - element is an array.",
+							element.toString(), entry.getKey()));
+				}
+			}
+
 		} else if (root.isJsonArray()) {
 			populateSteps(root.getAsJsonArray(), workflow);
 		}
@@ -160,7 +229,7 @@ public class JsonParser {
 						} else if (element.isJsonPrimitive()) {
 							step.addParameter(entry.getKey(), element.getAsString());
 						} else if (element.isJsonArray()) {
-							throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on type '%s' - element is an array.",
+							throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on step '%s' - element is an array.",
 									element.toString(), entry.getKey(), step.getName()));
 						}
 					}
