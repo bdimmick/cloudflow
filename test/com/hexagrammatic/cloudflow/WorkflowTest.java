@@ -22,11 +22,11 @@ public class WorkflowTest {
 	public void setUp() throws Exception {
 		workflow = new Workflow() {
 			@Override
-			protected void waitBeforeRetry(final Step step) {
+			protected void waitBeforeRetry(final Step step) throws InterruptedException {
 				if (step.getWaitBetweenTriesValue() > 0) {
 					totalTimeRetryWaiting.addAndGet(step.getWaitBetweenTriesUnits().toMillis(step.getWaitBetweenTriesValue()));
 				}		
-
+				super.waitBeforeRetry(step);
 			}
 		};
 	}
@@ -152,7 +152,7 @@ public class WorkflowTest {
 	}
 
 	@Test(expected=TimeoutException.class)
-	public void testWorkflowTimeout() throws TimeoutException {
+	public void testWorkflowTimeoutNoName() throws TimeoutException {
 		final Step step = new Step() {			
 			@Override
 			public void execute() {
@@ -165,6 +165,20 @@ public class WorkflowTest {
 		workflow.execute();
 	}
 	
+	@Test(expected=TimeoutException.class)
+	public void testWorkflowTimeoutWithName() throws TimeoutException {
+		final Step step = new Step() {			
+			@Override
+			public void execute() {
+				try { Thread.sleep(1000); } catch (final InterruptedException ie) {}
+			}
+		};
+		workflow.setName("workflow");
+		workflow.setTimeoutValue(10);
+		workflow.setTimeoutUnits(MILLISECONDS);
+		workflow.add(step);
+		workflow.execute();
+	}
 
 	@Test(expected=NullPointerException.class)
 	public void testStepException() throws TimeoutException {
@@ -177,7 +191,7 @@ public class WorkflowTest {
 		workflow.add(step);
 		workflow.execute();
 	}
-	
+		
 	@Test
 	public void testStepExceptionRetryNoWait() throws TimeoutException {
 		final AtomicInteger count = new AtomicInteger();

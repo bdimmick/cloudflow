@@ -140,9 +140,46 @@ public class JsonParserTest {
 	}
 	
 	@Test(expected=WorkflowCreationException.class)
+	public void testNonPrimitiveNameStepCreation() throws Exception {	
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("name", new JsonArray());
+		parser.populateStep(obj);
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testNonPrimitiveTimeoutStepCreation() throws Exception {	
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("timeout", new JsonArray());
+		parser.populateStep(obj);
+	}
+
+	
+	@Test(expected=WorkflowCreationException.class)
 	public void testPrivateStepCreation() throws Exception {	
 		final JsonObject obj = new JsonObject();
 		obj.add("class", new JsonPrimitive(PrivateStep.class.getName()));
+		parser.populateStep(obj);
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testNoClassStepCreation() throws Exception {	
+		parser.populateStep(new JsonObject());
+	}
+		
+	
+	@Test(expected=WorkflowCreationException.class)
+	public void testNonPrimitiveClassStepCreation() throws Exception {	
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonArray());
+		parser.populateStep(obj);
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testNonStepClassStepCreation() throws Exception {	
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(String.class.getName()));
 		parser.populateStep(obj);
 	}
 
@@ -165,6 +202,60 @@ public class JsonParserTest {
 		final JsonObject obj = new JsonObject();
 		obj.add("class", new JsonPrimitive("com.missing.class.no.really.it.is.Gone"));
 		parser.populateStep(obj);
+	}
+	
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithPrimitiveRoot() throws Exception {
+		parser.populateWorkflow(new JsonPrimitive("say what?"));
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithNameNonPrimitive() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("name", new JsonArray());
+		parser.populateWorkflow(obj);
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithStepsNonArray() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("steps", new JsonPrimitive(true));
+		parser.populateWorkflow(obj);
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithTimeoutNonPrimitive() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("timeout", new JsonArray());
+		parser.populateWorkflow(obj);
+	}
+	
+	@Test
+	public void testWorkflowCreationWithPrimitiveParameter() throws Exception {
+		final JsonObject obj = new JsonObject();
+		final String key = "param";
+		final String value = "value";
+		obj.add(key, new JsonPrimitive(value));
+		final Workflow workflow = parser.populateWorkflow(obj);
+		assertTrue(workflow.hasParameter(key));
+		assertEquals(value, workflow.getParameter(key));
+	}
+
+	@Test
+	public void testWorkflowCreationWithNullParameter() throws Exception {
+		final JsonObject obj = new JsonObject();
+		final String nullkey = "null";
+		obj.add(nullkey, null);
+		final Workflow workflow = parser.populateWorkflow(obj);
+		assertTrue(!workflow.hasParameter(nullkey));
+		assertNull(workflow.getParameter(nullkey));
+	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithNonPrimitiveParameter() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("key", new JsonArray());
+		parser.populateWorkflow(obj);
 	}
 	
 	@Test

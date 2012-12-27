@@ -243,7 +243,7 @@ public class JsonParser {
 				if (je!=null) {
 					if (je.isJsonPrimitive()) {
 						step.setMaxRetries(je.getAsInt());
-					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'maxRetries' value."));
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'maxRetries' value.", je.toString()));
 					obj.remove("maxRetries");
 				}
 				
@@ -251,7 +251,7 @@ public class JsonParser {
 				if (je!=null) {
 					if (je.isJsonPrimitive()) {
 						step.setName(je.getAsString());
-					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'name' value."));
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'name' value.", je.toString()));
 					obj.remove("name");
 				}
 
@@ -259,7 +259,7 @@ public class JsonParser {
 				if (je!=null) {
 					if (je.isJsonPrimitive()) {
 						step.setTimeout(je.getAsString());
-					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'timeout' value."));
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'timeout' value.", je.toString()));
 					obj.remove("timeout");
 				}
 
@@ -306,10 +306,6 @@ public class JsonParser {
 	public static class WorkflowCreationException extends Exception {
 		private static final long serialVersionUID = -4095197911433761427L;
 
-		public WorkflowCreationException(final String message, final Throwable cause) {
-			super(message, cause);
-		}
-		
 		public WorkflowCreationException(final Throwable cause) {
 			super(cause);
 		}
