@@ -40,17 +40,25 @@ public abstract class Step extends Parameterized {
 
 	/**
 	 * Sets the workflow that 'owns' this step instance.
-	 * @param workflow the workflow - may not be null
+	 * @param workflow the workflow - may be <code>null</code> to indicate an 'unowned' step.
 	 */
 	protected final void setWorkflow(final Workflow workflow) {
-		Validate.isTrue(workflow==null || this.workflow==null,"Attempting to assign a workflow to a step that already has a workflow assigned.");		
 		this.workflow = workflow;
 	}
 	
+	/**
+	 * Gets the workflow the 'owns' this step instance.
+	 * @return the workflow instance, or <code>null</code> if the step is 'unowned'
+	 */
 	protected final Workflow getWorkflow() {
 		return workflow;
 	}
 
+	/**
+	 * Gets a parameter value for this step instance.  If the parameter is not found in the step
+	 * itself and the step is 'owned' by a workflow, the workflow is also checked for
+	 * the parameter.
+	 */
 	@Override
 	protected Object getParameter(final String key, final Object defaultValue) {		
 		Object result =  super.getParameter(key, defaultValue);
@@ -60,6 +68,11 @@ public abstract class Step extends Parameterized {
 		return result;
 	}
 	
+	/**
+	 * Adds a parameter to this step instance.  If the step is 'owned' by a workflow,
+	 * then the parameter is also added to the workflow, allowing step execution
+	 * to pass on parameters to subsequent steps.
+	 */
 	@Override	
 	protected void addParameter(final String key, final Object value) {
 		super.addParameter(key, value);
@@ -68,6 +81,11 @@ public abstract class Step extends Parameterized {
 		}
 	}
 	
+	/**
+	 * Determines if this step instance has a specific parameter.  If the parameter is not found in the step
+	 * itself and the step is 'owned' by a workflow, the workflow is also checked for
+	 * the parameter.
+	 */
 	@Override
 	protected boolean hasParameter(final String key) {
 		if (!super.hasParameter(key)) {
@@ -80,24 +98,42 @@ public abstract class Step extends Parameterized {
 		return true;
 	}
 	
+	/**
+	 * Snapshots the parameters in this step instance.  If the step is 'owned' by a workflow,
+	 * the workflow is also snapshotted.
+	 */
 	@Override
 	protected void snapshot() {
 		super.snapshot();
 		if (workflow!=null) workflow.snapshot();
 	}
-	
+
+	/**
+	 * Rolls back the parameters in this step instance to a previous snapshot.  If the step is 'owned' by a workflow,
+	 * the workflow are also rolled back.
+	 */
 	@Override
 	protected void rollback() {		
 		super.rollback();
 		if (workflow!=null) workflow.rollback();
 	}
 	
+	/**
+	 * Removes a parameter from this step instance.  If the step is 'owned' by a workflow,
+	 * the parameter is also removed from the workflow.
+	 */
 	@Override
 	protected void removeParameter(final String key) {
 		super.removeParameter(key);
 		if (workflow!=null) workflow.removeParameter(key);
 	}
 	
+	/**
+	 * Sets the timeout for this step.  Steps that run longer than
+	 * their timeout are aborted and retried, if retries are available.
+	 * @param timeout the timeout tuple - may not be <code>null</code> or blank
+	 * @see Utils#parseTimeTuple(String)
+	 */
 	public final void setTimeout(final String timeout) {		
 		final Object[] parsed = Utils.parseTimeTuple(timeout);
 		setTimeout((Long)parsed[0]);
@@ -152,5 +188,12 @@ public abstract class Step extends Parameterized {
 		this.waitBetweenTriesUnits = waitBetweenTriesUnits;
 	}
 	
+	/**
+	 * Body of step execution logic.  Implementors must override this method and implement whatever
+	 * the step has to do.  Implementors may feel free to let unchecked exceptions
+	 * be thrown outside of this class, as the framework will pick them up and handle them properly
+	 * for retries by ignoring them and, when the retries are exhausted, will throw the instance of the
+	 * unchecked exception out of the body of the workflow's <code>execute()</code> call to let callers handle.
+	 */
 	protected abstract void execute();
 }

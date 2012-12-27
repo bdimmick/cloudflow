@@ -62,10 +62,6 @@ import com.google.gson.JsonObject;
  * }
  * </pre>
  * <p>
- * In some cases, this parser will try to ignore or warn on type errors (e.g. expecting a JSON array and finding a JSON string primitive) and 
- * try to continue marshalling nonetheless.  This may result in incomplete or faulty workflows.  If you don't want the parser to ignore these type
- * errors, please feel free to turn on <code>strict</code> mode, which will result in <code>WorkflowCreationException</code>s when such cases are encountered. 
- * <p>
  * In the case that you want to load classes for Steps from another classloader, feel free to use the <code>setClassLoader</code> method to set the specific
  * classloader that loads the Step classes.  This may be useful in some cases where the Step bytecode is defined outside the initial Java classpath and could
  * be dyanmically updated, such as hosting the classes in a version control system or a distributed filesystem, allowing them to be updated without restarting
@@ -75,7 +71,6 @@ import com.google.gson.JsonObject;
  * @since 2012.12
  */
 public class JsonParser {
-	//TODO: Enable 'strict' mode.
 	
 	private ClassLoader classLoader = JsonParser.class.getClassLoader();
 	
@@ -125,27 +120,74 @@ public class JsonParser {
 		return populateWorkflow(parser.parse(data));		
 	}
 	
+	
+	/**
+	 * Performs any post-workflow creation actions, called after all parameters and steps have been added.
+	 * This method does nothing in this implementation, but implementors may feel free to extend this class 
+	 * and add their own hooks to modify workflows after the parser has finished creating them.
+	 * @param workflow the workflow instance- never null.
+	 */
+	protected void post(final Workflow workflow) {};
+	
+	/**
+	 * Performs any pre-workflow creation actions, called before any parameters and steps have been added.
+	 * This method does nothing in this implementation, but implementors may feel free to extend this class 
+	 * and add their own hooks to modify workflows before the parser has started populating them.
+	 * @param workflow the workflow instance- never null.
+	 */
+	protected void pre(final Workflow workflow) {};
+	
+	/**
+	 * Performs any post-step creation actions, called before any parameters have been added.
+	 * This method does nothing in this implementation, but implementors may feel free to extend this class 
+	 * and add their own hooks to modify steps after the parser has finished creating them.
+	 * @param workflow the workflow instance- never null.
+	 */
+	protected void post(final Step step) {};
+	
+	/**
+	 * Performs any pre-step creation actions, called before any parameters have been added.
+	 * This method does nothing in this implementation, but implementors may feel free to extend this class 
+	 * and add their own hooks to modify steps before the parser has started populating them.
+	 * @param workflow the workflow instance- never null.
+	 */
+	protected void pre(final Step step) {};
+	
+	
 	Workflow populateWorkflow(final JsonElement root) throws WorkflowCreationException {
 		final Workflow workflow = new Workflow(); 
+		pre(workflow);
 		if (root.isJsonObject()) {
 			final JsonObject obj = root.getAsJsonObject();
 
 			final JsonElement name = obj.get("name");
-			if (name!=null && name.isJsonPrimitive()) {
-				workflow.setName(name.getAsString());
-				obj.remove("name");
+			if (name!=null) {
+				if (name.isJsonPrimitive()) {
+					workflow.setName(name.getAsString());
+					obj.remove("name");
+				} else {
+					throw new WorkflowCreationException(String.format("Workflow name value '%s' is not a JSON primitive.", name.toString()));
+				}
 			}
 			
 			final JsonElement timeout = obj.get("timeout");
-			if (timeout!=null && timeout.isJsonPrimitive()) {
-				workflow.setTimeout(timeout.getAsString());
-				obj.remove("timeout");
+			if (timeout!=null) {
+				if (timeout.isJsonPrimitive()) {
+					workflow.setTimeout(timeout.getAsString());
+					obj.remove("timeout");
+				} else {
+					throw new WorkflowCreationException(String.format("Workflow timeout value '%s' is not a JSON primitive.", timeout.toString()));
+				}
 			}
 			
 			final JsonElement steps = obj.get("steps");
-			if (steps!=null && steps.isJsonArray()) {
-				populateSteps(steps.getAsJsonArray(), workflow);
-				obj.remove("steps");
+			if (steps!=null) {
+				if (steps.isJsonArray()) {
+					populateSteps(steps.getAsJsonArray(), workflow);
+					obj.remove("steps");
+				} else {
+					throw new WorkflowCreationException(String.format("Workflow steps value '%s' is not a JSON array.", steps.toString()));
+				}
 			}
 			
 			for (final Map.Entry<String, JsonElement> entry: obj.entrySet()) {						
@@ -156,15 +198,16 @@ public class JsonParser {
 					workflow.addParameter(entry.getKey(), null);
 				} else if (element.isJsonPrimitive()) {
 					workflow.addParameter(entry.getKey(), element.getAsString());
-				} else if (element.isJsonArray()) {
-					throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on workflow - element is an array.",
-							element.toString(), entry.getKey()));
+				} else {
+					throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on workflow - element is a %s.",
+							element.toString(), entry.getKey(), element.getClass().getSimpleName()));
 				}
 			}
 
 		} else if (root.isJsonArray()) {
 			populateSteps(root.getAsJsonArray(), workflow);
-		}
+		} else throw new WorkflowCreationException("Root element of JSON document is neither an array nor an object.");
+		post(workflow);
 		return workflow;
 	}
 	
@@ -178,73 +221,83 @@ public class JsonParser {
 	
 	Step populateStep(final JsonObject obj) throws WorkflowCreationException {
 		Step step = null;
-		Class<?> source = null;
+		JsonElement classname = obj.get("class");
+		if (classname == null) 
+			throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' does not supply a class declaration.", obj.toString()));
+		if (!classname.isJsonPrimitive()) 
+			throw new WorkflowCreationException(String.format("Provided JSON step class declaration '%s' is not a JSON primitive.", classname.toString()));
+		
+		
 		try {
-			if (obj.has("class") && obj.get("class").isJsonPrimitive()) {
-				source = classLoader.loadClass(obj.get("class").getAsString());
-			}		
-			if (source!=null) {
-				if (Step.class.isAssignableFrom(source)) {
-					step = (Step)source.newInstance();
+			final Class<?> source = classLoader.loadClass(classname.getAsString());
+			if (Step.class.isAssignableFrom(source)) {
+				step = (Step)source.newInstance();
+				pre(step);
 				
-					if (obj.has("maxTries")) {
-						final JsonElement je = obj.get("maxTries");
-						if (je.isJsonPrimitive()) {
-							step.setMaxTries(je.getAsInt());
-						}
-						obj.remove("maxTries");
-					}
-					
-					if (obj.has("name")) {
-						final JsonElement je = obj.get("name");
-						if (je.isJsonPrimitive()) {
-							step.setName(je.getAsString());
-						}
-						obj.remove("name");
-					}
-					
-					if (obj.has("timeout")) {
-						final JsonElement je = obj.get("timeout");
-						if (je.isJsonPrimitive()) {
-							step.setTimeout(je.getAsString());
-						}
-						obj.remove("timeout");
+				JsonElement je = obj.get("maxTries");
+				if (je!=null) {
+					if (je.isJsonPrimitive()) {
+						step.setMaxTries(je.getAsInt());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'maxTries' value."));
+					obj.remove("maxTries");
+				}
+				
+				je = obj.get("name");
+				if (je!=null) {
+					if (je.isJsonPrimitive()) {
+						step.setName(je.getAsString());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'name' value."));
+					obj.remove("name");
+				}
 
-					}
-					
-					if (obj.has("waitBetweenTries")) {
-						final JsonElement je = obj.get("waitBetweenTries");
-						if (je.isJsonPrimitive()) {
-							step.setWaitBetweenTries(je.getAsString());
-						}
-						obj.remove("waitBetweenTries");
-					}
-										
-					for (final Map.Entry<String, JsonElement> entry: obj.entrySet()) {						
-						JsonElement element = entry.getValue();						
-						if (element == null) {
-							step.addParameter(entry.getKey(), null);
-						} else if (element.isJsonNull()) {
-							step.addParameter(entry.getKey(), null);
-						} else if (element.isJsonPrimitive()) {
-							step.addParameter(entry.getKey(), element.getAsString());
-						} else if (element.isJsonArray()) {
-							throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on step '%s' - element is an array.",
-									element.toString(), entry.getKey(), step.getName()));
-						}
+				je = obj.get("timeout");
+				if (je!=null) {
+					if (je.isJsonPrimitive()) {
+						step.setTimeout(je.getAsString());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'timeout' value."));
+					obj.remove("timeout");
+				}
+
+				je = obj.get("waitBetweenTries");
+				if (je!=null) {
+					if (je.isJsonPrimitive()) {
+						step.setWaitBetweenTries(je.getAsString());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'waitBetweenTries' value."));
+					obj.remove("waitBetweenTries");
+				}
+
+				for (final Map.Entry<String, JsonElement> entry: obj.entrySet()) {						
+					JsonElement element = entry.getValue();						
+					if (element == null) {
+						step.addParameter(entry.getKey(), null);
+					} else if (element.isJsonNull()) {
+						step.addParameter(entry.getKey(), null);
+					} else if (element.isJsonPrimitive()) {
+						step.addParameter(entry.getKey(), element.getAsString());
+					} else if (element.isJsonArray()) {
+						throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on step '%s' - element is a %s.",
+								element.toString(), entry.getKey(), step.getName(), element.getClass().getSimpleName()));
 					}
 				}
-			}		
+				post(step);
+			} else {
+				throw new WorkflowCreationException(String.format("Provided step class definition '%s' does not extend '%s'", source.getName(), Step.class.getName()));
+			}
 		} catch (final ClassNotFoundException e) {
 			throw new WorkflowCreationException(e);
-		} catch (InstantiationException e) {
+		} catch (final InstantiationException e) {
 			throw new WorkflowCreationException(e);
-		} catch (IllegalAccessException e) {
+		} catch (final IllegalAccessException e) {
 			throw new WorkflowCreationException(e);
 		}
 		return step;
 	}
 	
+	/**
+	 * Exception type thrown in the case that workflow creation fails.
+	 * @author Bill Dimmick <me@billdimmick.com>
+	 * @since 2012.12
+	 */
 	public static class WorkflowCreationException extends Exception {
 		private static final long serialVersionUID = -4095197911433761427L;
 
