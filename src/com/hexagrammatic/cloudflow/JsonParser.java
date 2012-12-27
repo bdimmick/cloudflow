@@ -70,7 +70,7 @@ import com.google.gson.JsonObject;
  * In the case that dependencies, such as JPA <code>EntityManagerFactory</code>s or other utilities that enable steps to act on external resources, need 
  * to be injected into the steps or workflows created during parsing, implementors can extend this class to contain references to those dependencies, 
  * overriding the <code>pre(Step)</code>, <code>pre(Workflow)</code>, <code>post(Step)</code>, or <code>post(Workflow)</code> methods, and determine 
- * when a step instance needs to have a dependency set on it.
+ * when a step or workflow instance needs to have a dependency set on it.
  *   
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12
