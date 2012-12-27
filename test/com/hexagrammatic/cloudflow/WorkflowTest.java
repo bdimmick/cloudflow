@@ -23,8 +23,8 @@ public class WorkflowTest {
 		workflow = new Workflow() {
 			@Override
 			protected void waitBeforeRetry(final Step step) {
-				if (step.getWaitBetweenTries() > 0) {
-					totalTimeRetryWaiting.addAndGet(step.getWaitBetweenTriesUnits().toMillis(step.getWaitBetweenTries()));
+				if (step.getWaitBetweenTriesValue() > 0) {
+					totalTimeRetryWaiting.addAndGet(step.getWaitBetweenTriesUnits().toMillis(step.getWaitBetweenTriesValue()));
 				}		
 
 			}
@@ -210,12 +210,12 @@ public class WorkflowTest {
 			}
 		};
 		step.setMaxRetries(2);
-		step.setWaitBetweenTries(10);
+		step.setWaitBetweenTriesValue(10);
 		step.setWaitBetweenTriesUnits(MILLISECONDS);
 		workflow.add(step);
 		workflow.execute();		
 		assertEquals(2, count.get());
-		assertEquals(step.getWaitBetweenTries(), totalTimeRetryWaiting.get());
+		assertEquals(step.getWaitBetweenTriesValue(), totalTimeRetryWaiting.get());
 	}
 
 	@Test
@@ -233,12 +233,12 @@ public class WorkflowTest {
 		step.setTimeoutValue(10);
 		step.setTimeoutUnits(MILLISECONDS);
 		step.setMaxRetries(2);
-		step.setWaitBetweenTries(10);
+		step.setWaitBetweenTriesValue(10);
 		step.setWaitBetweenTriesUnits(MILLISECONDS);
 		workflow.add(step);
 		workflow.execute();
 		assertEquals(2, count.get());
-		assertEquals(step.getWaitBetweenTries(), totalTimeRetryWaiting.get());
+		assertEquals(step.getWaitBetweenTriesValue(), totalTimeRetryWaiting.get());
 	}
 
 	@Test

@@ -117,8 +117,8 @@ public class StepTest {
 	@Test
 	public void testSetWaitBeforeRetryAsLongWithUnsetUnits() {
 		final long value = 1;
-		step.setWaitBetweenTries(value);
-		assertEquals(value, step.getWaitBetweenTries());
+		step.setWaitBetweenTriesValue(value);
+		assertEquals(value, step.getWaitBetweenTriesValue());
 		assertEquals(SECONDS, step.getWaitBetweenTriesUnits());
 	}
 	
@@ -126,9 +126,9 @@ public class StepTest {
 	public void testSetWaitBeforeRetryAsLongWithSetUnits() {
 		final long value = 1;
 		final TimeUnit unit = MINUTES;
-		step.setWaitBetweenTries(value);
+		step.setWaitBetweenTriesValue(value);
 		step.setWaitBetweenTriesUnits(unit);
-		assertEquals(value, step.getWaitBetweenTries());
+		assertEquals(value, step.getWaitBetweenTriesValue());
 		assertEquals(unit, step.getWaitBetweenTriesUnits());
 	}
 
@@ -161,21 +161,21 @@ public class StepTest {
 	@Test
 	public void testSignularUnitWaitBetweenTriesString() {
 		step.setWaitBetweenTries("1 MINUTE");
-		assertEquals(1, step.getWaitBetweenTries());
+		assertEquals(1, step.getWaitBetweenTriesValue());
 		assertEquals(MINUTES, step.getWaitBetweenTriesUnits());
 	}
 
 	@Test
 	public void testPluralUnitWaitBetweenTriesString() {
 		step.setWaitBetweenTries("5 HOURS");
-		assertEquals(5, step.getWaitBetweenTries());
+		assertEquals(5, step.getWaitBetweenTriesValue());
 		assertEquals(HOURS, step.getWaitBetweenTriesUnits());
 	}
 
 	@Test
 	public void testNoUnitWaitBetweenTriesString() {
 		step.setWaitBetweenTries("5");
-		assertEquals(5, step.getWaitBetweenTries());
+		assertEquals(5, step.getWaitBetweenTriesValue());
 		assertEquals(SECONDS, step.getWaitBetweenTriesUnits());		
 	}
 

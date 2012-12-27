@@ -18,7 +18,7 @@ public abstract class Step extends Parameterized {
 	private long timeoutValue = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
 	private int maxRetries = 0;
-	private long waitBetweenTries = -1;
+	private long waitBetweenTriesValue = -1;
 	private TimeUnit waitBetweenTriesUnits = TimeUnit.SECONDS;
 
 	/**
@@ -211,7 +211,7 @@ public abstract class Step extends Parameterized {
 	 */
 	public final void setWaitBetweenTries(final String wait) {
 		final Object[] parsed = Utils.parseTimeTuple(wait);
-		setWaitBetweenTries((Long)parsed[0]);
+		setWaitBetweenTriesValue((Long)parsed[0]);
 		setWaitBetweenTriesUnits((TimeUnit)parsed[1]);
 	}
 	
@@ -219,8 +219,8 @@ public abstract class Step extends Parameterized {
 	 * Gets the retry wait value, which is the numeric component of the overall step retry wait.
 	 * @return the retry wait value, or -1 if the step never waits between retries.
 	 */
-	protected final long getWaitBetweenTries() {
-		return waitBetweenTries;
+	protected final long getWaitBetweenTriesValue() {
+		return waitBetweenTriesValue;
 	}
 	
 	/**
@@ -229,8 +229,8 @@ public abstract class Step extends Parameterized {
 	 * that never wait will always return a value of -1.
 	 * @param timeout the timeout value (See above for special casing about negative values.) 
 	 */
-	protected final void setWaitBetweenTries(long waitBetweenTries) {
-		this.waitBetweenTries = waitBetweenTries;
+	protected final void setWaitBetweenTriesValue(long waitBetweenTries) {
+		this.waitBetweenTriesValue = waitBetweenTries;
 	}
 	
 	/**
@@ -238,7 +238,7 @@ public abstract class Step extends Parameterized {
 	 * @return the retry wait units as a TimeUnit or <code>null</code> if this step has no retry wait.
 	 */
 	protected final TimeUnit getWaitBetweenTriesUnits() {
-		if (waitBetweenTries < 0) return null;
+		if (waitBetweenTriesValue < 0) return null;
 		return waitBetweenTriesUnits;
 	}
 	
@@ -247,7 +247,7 @@ public abstract class Step extends Parameterized {
 	 * The parameter to this method may never be null; if you want to disable the retry wait, use
 	 * <code>setWaitBetweenTriesValue(-1)</code> instead.
 	 * @param waitBetweenTriesUnits the retry units as a TimeUnit; may never be <code>null</code>.
-	 * @see Step#setWaitBetweenTries(long)
+	 * @see Step#setWaitBetweenTriesValue(long)
 	 * @throws IllegalArgumentException if the provided argument is <code>null</code>.
 	 */
 	protected final void setWaitBetweenTriesUnits(final TimeUnit waitBetweenTriesUnits) {

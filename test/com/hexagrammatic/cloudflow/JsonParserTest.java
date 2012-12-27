@@ -111,7 +111,7 @@ public class JsonParserTest {
 		final Step step = parser.populateStep(obj);
 		assertNotNull(step);
 		assertEquals(SimpleStep.class, step.getClass());
-		assertEquals(5, step.getWaitBetweenTries());
+		assertEquals(5, step.getWaitBetweenTriesValue());
 		assertEquals(TimeUnit.MINUTES, step.getWaitBetweenTriesUnits());
 	}
 

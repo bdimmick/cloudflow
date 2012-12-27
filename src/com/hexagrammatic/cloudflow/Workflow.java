@@ -259,8 +259,8 @@ public class Workflow extends Parameterized {
 	 * @throws InterruptedException if the sleep is interrupted before it completes.
 	 */
 	protected void waitBeforeRetry(final Step step) throws InterruptedException {
-		if (step.getWaitBetweenTries() > 0) {
-			step.getWaitBetweenTriesUnits().sleep(step.getWaitBetweenTries());
+		if (step.getWaitBetweenTriesValue() > 0) {
+			step.getWaitBetweenTriesUnits().sleep(step.getWaitBetweenTriesValue());
 		}		
 	}	
 }
