@@ -35,7 +35,7 @@ public class Workflow extends Parameterized {
 	//TODO: Add insertAfter methods?
 	private ArrayList<Step> steps = new ArrayList<Step>();
 	private String name = null;
-	private long timeout = -1;
+	private long timeoutValue = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
 	
 	/**
@@ -79,7 +79,7 @@ public class Workflow extends Parameterized {
 	 * @return the timeout value, or -1 if the workflow never times out.
 	 */
 	protected long getTimeoutValue() {
-		return timeout;
+		return timeoutValue;
 	}
 
 	/**
@@ -89,8 +89,8 @@ public class Workflow extends Parameterized {
 	 * @param timeout the timeout value (See above for special casing about negative values.) 
 	 */
 	protected void setTimeoutValue(final long timeout) {
-		this.timeout = timeout;
-		if (this.timeout < -1) this.timeout = -1; 
+		this.timeoutValue = timeout;
+		if (this.timeoutValue < -1) this.timeoutValue = -1; 
 
 	}
 
@@ -99,7 +99,7 @@ public class Workflow extends Parameterized {
 	 * @return the timeout units as a TimeUnit or <code>null</code> if this workflow has no timeout.
 	 */
 	protected TimeUnit getTimeoutUnits() {
-		if (timeout < 0) return null;
+		if (timeoutValue < 0) return null;
 		return timeoutUnits;
 	}
 
@@ -241,7 +241,7 @@ public class Workflow extends Parameterized {
 					}
 				} catch (ExecutionException ee) {
 					if (trynum == step.getMaxRetries()) throw ee;
-				}				
+				}	
 				retryWait(step);
 				step.rollback();
 			}

@@ -15,7 +15,7 @@ public abstract class Step extends Parameterized {
 	//TODO: Enable 'skip on failure' mode
 	private String name = getClass().getSimpleName();
 	private Workflow workflow = null;
-	private long timeout = -1;
+	private long timeoutValue = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
 	private int maxRetries = 0;
 	private long waitBetweenTries = -1;
@@ -145,7 +145,7 @@ public abstract class Step extends Parameterized {
 	 * @return the timeout value, or -1 if the step never times out.
 	 */
 	protected final long getTimeoutValue() {
-		return timeout;
+		return timeoutValue;
 	}
 		
 	/**
@@ -155,8 +155,8 @@ public abstract class Step extends Parameterized {
 	 * @param timeout the timeout value (See above for special casing about negative values.) 
 	 */
 	protected void setTimeoutValue(final long timeout) {
-		this.timeout = timeout;
-		if (this.timeout < -1) this.timeout = -1; 
+		this.timeoutValue = timeout;
+		if (this.timeoutValue < -1) this.timeoutValue = -1; 
 
 	}
 	
@@ -165,7 +165,7 @@ public abstract class Step extends Parameterized {
 	 * @return the timeout units as a TimeUnit or <code>null</code> if this step has no timeout.
 	 */
 	protected final TimeUnit getTimeoutUnits() {
-		if (timeout < 0) return null;
+		if (timeoutValue < 0) return null;
 		return timeoutUnits;
 	}
 	
@@ -193,11 +193,12 @@ public abstract class Step extends Parameterized {
 
 	/**
 	 * Set the maximum number of times the step will be retried after failure.  If this is set
-	 * to less than 1, this step is never retried in workflow execution.  If unset, the default value
+	 * to 0, this step is never retried in workflow execution.  If unset, the default value
 	 * is 0.
-	 * @param maxRetries the number of times to try to execute this step - if less than 1, the step is never retried 
+	 * @param maxRetries the number of times to try to execute this step - never negative  
 	 */
 	protected final void setMaxRetries(final int maxRetries) {
+		Validate.isTrue(maxRetries >= 0, "The provided maximum retries must not be negative.");
 		this.maxRetries = maxRetries;
 	}
 
