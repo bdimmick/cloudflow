@@ -242,7 +242,7 @@ public class Workflow extends Parameterized {
 				} catch (ExecutionException ee) {
 					if (trynum == step.getMaxRetries()) throw ee;
 				}	
-				retryWait(step);
+				waitBeforeRetry(step);
 				step.rollback();
 			}
 		}
@@ -251,11 +251,14 @@ public class Workflow extends Parameterized {
 	/**
 	 * Perform any required sleeping between a failed execution of a step and its retry.  Implementors
 	 * may choose to override this method to inject hooks that may happen before or after waiting, but
-	 * such implementations should always call <code>super.retryWait(Step)</code>.
+	 * such implementations should always call <code>super.retryWait(Step)</code> unless they want to handle
+	 * the wait logic itself.
+	 * <p>
+	 * The wait logic, by default, is a contant-time wait.
 	 * @param step the step that will be retried; never <code>null</code>
 	 * @throws InterruptedException if the sleep is interrupted before it completes.
 	 */
-	protected void retryWait(final Step step) throws InterruptedException {
+	protected void waitBeforeRetry(final Step step) throws InterruptedException {
 		if (step.getWaitBetweenTries() > 0) {
 			step.getWaitBetweenTriesUnits().sleep(step.getWaitBetweenTries());
 		}		

@@ -22,7 +22,7 @@ public class WorkflowTest {
 	public void setUp() throws Exception {
 		workflow = new Workflow() {
 			@Override
-			protected void retryWait(final Step step) {
+			protected void waitBeforeRetry(final Step step) {
 				if (step.getWaitBetweenTries() > 0) {
 					totalTimeRetryWaiting.addAndGet(step.getWaitBetweenTriesUnits().toMillis(step.getWaitBetweenTries()));
 				}		

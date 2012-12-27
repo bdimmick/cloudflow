@@ -202,26 +202,56 @@ public abstract class Step extends Parameterized {
 		this.maxRetries = maxRetries;
 	}
 
+	/**
+	 * Sets the time to wait between retries for this step.  Steps that are retried
+	 * call the workflow's <code>waitForRetry</code>, which uses this value to determine
+	 * how long to sleep before trying the step again.
+	 * @param wait the wait time tuple - may not be <code>null</code> or blank
+	 * @see Utils#parseTimeTuple(String)
+	 */
 	public final void setWaitBetweenTries(final String wait) {
 		final Object[] parsed = Utils.parseTimeTuple(wait);
 		setWaitBetweenTries((Long)parsed[0]);
 		setWaitBetweenTriesUnits((TimeUnit)parsed[1]);
 	}
 	
+	/**
+	 * Gets the retry wait value, which is the numeric component of the overall step retry wait.
+	 * @return the retry wait value, or -1 if the step never waits between retries.
+	 */
 	protected final long getWaitBetweenTries() {
 		return waitBetweenTries;
 	}
 	
+	/**
+	 * Sets the retry wait value, which is the numeric component of the overall step retry wait.
+	 * Providing a negative value indicates that the step should never wait between retries and steps
+	 * that never wait will always return a value of -1.
+	 * @param timeout the timeout value (See above for special casing about negative values.) 
+	 */
 	protected final void setWaitBetweenTries(long waitBetweenTries) {
 		this.waitBetweenTries = waitBetweenTries;
 	}
 	
+	/**
+	 * Gets the units of the retry wait, which is the units component of the overall retry wait.
+	 * @return the retry wait units as a TimeUnit or <code>null</code> if this step has no retry wait.
+	 */
 	protected final TimeUnit getWaitBetweenTriesUnits() {
+		if (waitBetweenTries < 0) return null;
 		return waitBetweenTriesUnits;
 	}
 	
+	/**
+	 * Sets the retry wait units, which is the units component of the overall step retry wait.
+	 * The parameter to this method may never be null; if you want to disable the retry wait, use
+	 * <code>setWaitBetweenTriesValue(-1)</code> instead.
+	 * @param waitBetweenTriesUnits the retry units as a TimeUnit; may never be <code>null</code>.
+	 * @see Step#setWaitBetweenTries(long)
+	 * @throws IllegalArgumentException if the provided argument is <code>null</code>.
+	 */
 	protected final void setWaitBetweenTriesUnits(final TimeUnit waitBetweenTriesUnits) {
-		Validate.notNull(waitBetweenTriesUnits, "The provided wait between retries units may not be null.");
+		Validate.notNull(waitBetweenTriesUnits, "The provided retry wait units may not be null.");
 		this.waitBetweenTriesUnits = waitBetweenTriesUnits;
 	}
 	
