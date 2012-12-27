@@ -6,6 +6,11 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
 /**
+ * Type enclosing a single workflow step, consisting of metadata about the step and the logic the step will be taking upon execution.
+ * <p>
+ * Implementors are only expected to override the <code>execute()</code> method with the logic of the step.  If a step needs to have
+ * dependencies injected, implementors can extend a Step, define setters for the appropriate properties, and extend JsonParser to assign
+ * the dependencies either during an implementation of <code>pre(Step)</code> or <code>post(Step)</code>.
  * 
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12 
