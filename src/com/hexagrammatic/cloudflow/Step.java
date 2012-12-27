@@ -227,10 +227,10 @@ public abstract class Step extends Parameterized {
 	 * Sets the retry wait value, which is the numeric component of the overall step retry wait.
 	 * Providing a negative value indicates that the step should never wait between retries and steps
 	 * that never wait will always return a value of -1.
-	 * @param timeout the timeout value (See above for special casing about negative values.) 
+	 * @param waitBetweenTriesValue the timeout value (See above for special casing about negative values.) 
 	 */
-	protected final void setWaitBetweenTriesValue(long waitBetweenTries) {
-		this.waitBetweenTriesValue = waitBetweenTries;
+	protected final void setWaitBetweenTriesValue(long waitBetweenTriesValue) {
+		this.waitBetweenTriesValue = waitBetweenTriesValue;
 	}
 	
 	/**

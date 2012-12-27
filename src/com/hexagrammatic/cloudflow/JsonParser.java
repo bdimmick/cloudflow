@@ -141,7 +141,7 @@ public class JsonParser {
 	 * Performs any post-step creation actions, called before any parameters have been added.
 	 * This method does nothing in this implementation, but implementors may feel free to extend this class 
 	 * and add their own hooks to modify steps after the parser has finished creating them.
-	 * @param workflow the workflow instance- never null.
+	 * @param step the step instance - never null.
 	 */
 	protected void post(final Step step) {};
 	
@@ -149,7 +149,7 @@ public class JsonParser {
 	 * Performs any pre-step creation actions, called before any parameters have been added.
 	 * This method does nothing in this implementation, but implementors may feel free to extend this class 
 	 * and add their own hooks to modify steps before the parser has started populating them.
-	 * @param workflow the workflow instance- never null.
+	 * @param step the step instance - never null.
 	 */
 	protected void pre(final Step step) {};
 	
