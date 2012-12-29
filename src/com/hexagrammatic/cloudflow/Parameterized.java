@@ -3,6 +3,8 @@ package com.hexagrammatic.cloudflow;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang.Validate;
 
@@ -12,14 +14,15 @@ import org.apache.commons.lang.Validate;
  * in the fact that it includes methods for 'snapshotting' and rolling back changes to the parameters, which is important when
  * striving to not have 'half-changes' propagated.
  * <p>
- * Note: This type provides very little to no thread-safety.  Please don't use it in multiple threads simultaneously. 
+ * Note: This type provides very crude thread-safety using read-write locks.  This is probably overkill, and implementors may 
+ * coose to abandon thread-safety if they can ensure that only one thread will be accessing an object of this type at a time.
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12
  */
 public abstract class Parameterized {
-	//TODO: Refactor this class to make it thread-safe	
 	private HashMap<String, LiteLinkedList> values = new HashMap<String, LiteLinkedList>();
-    
+	private ReadWriteLock rwLock = new ReentrantReadWriteLock();
+	
     /**
      * Snapshots the current parameters.  
      * <p> 
@@ -28,11 +31,16 @@ public abstract class Parameterized {
      * <code>super.snapshot()</code>.
      */
     protected void snapshot() {
-    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
-    		final LiteLinkedList current = entry.getValue();
-    		final LiteLinkedList next = new LiteLinkedList(current);
-    		next.setValue(current.getValue());
-    		entry.setValue(next);
+    	rwLock.writeLock().lock();
+    	try {
+	    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
+	    		final LiteLinkedList current = entry.getValue();
+	    		final LiteLinkedList next = new LiteLinkedList(current);
+	    		next.setValue(current.getValue());
+	    		entry.setValue(next);
+	    	}
+    	} finally {
+    		rwLock.writeLock().unlock();
     	}
     }
     
@@ -43,18 +51,23 @@ public abstract class Parameterized {
      * such implementations <i>must</i> contain a call to <code>super.rollback()</code>.
      */
     protected void rollback() {
-    	final ArrayList<String> removals = new ArrayList<String>();
-    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
-    		final LiteLinkedList prev = entry.getValue().next();
-    		if (prev == null) {
-    			removals.add(entry.getKey());
-    		} else {
-    			entry.getValue().setValue(null);
-    			entry.setValue(prev);
-    		}
-    	}
-    	for (final String removal: removals) {
-    		values.remove(removal);
+    	rwLock.writeLock().lock();
+    	try {
+	    	final ArrayList<String> removals = new ArrayList<String>();
+	    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
+	    		final LiteLinkedList prev = entry.getValue().next();
+	    		if (prev == null) {
+	    			removals.add(entry.getKey());
+	    		} else {
+	    			entry.getValue().setValue(null);
+	    			entry.setValue(prev);
+	    		}
+	    	}
+	    	for (final String removal: removals) {
+	    		values.remove(removal);
+	    	}
+    	} finally {
+    		rwLock.writeLock().unlock();
     	}
     }
 
@@ -65,12 +78,17 @@ public abstract class Parameterized {
      */
 	protected void addParameter(final String key, final Object value) {
 		Validate.notNull(key, "The provided key may not be null.");
-		LiteLinkedList stack = values.get(key);
-		if (stack == null) {
-			stack = new LiteLinkedList();
-			values.put(key, stack);
+		rwLock.writeLock().lock();
+		try {
+			LiteLinkedList stack = values.get(key);
+			if (stack == null) {
+				stack = new LiteLinkedList();
+				values.put(key, stack);
+			}
+			stack.setValue(value);
+		} finally {
+			rwLock.writeLock().unlock();
 		}
-		stack.setValue(value);
 	}
 	
 	/**
@@ -79,10 +97,15 @@ public abstract class Parameterized {
 	 */
 	protected void removeParameter(final String key) {
 		if (key == null) return;
-		final LiteLinkedList stack = values.get(key);
-		if (stack != null) {
-			stack.setValue(null);
-		}		
+		rwLock.writeLock().lock();
+		try {
+			final LiteLinkedList stack = values.get(key);
+			if (stack != null) {
+				stack.setValue(null);
+			}
+		} finally {
+			rwLock.writeLock().unlock();
+		}
 	}
 	
 	/**
@@ -92,10 +115,15 @@ public abstract class Parameterized {
 	 */
 	protected boolean hasParameter(final String key) {
 		if (key == null) return false;
-		final LiteLinkedList stack = values.get(key);
-		if (stack == null) return false;
-		if (stack.getValue() == null) return false;
-		return true;
+		rwLock.readLock().lock();
+		try {
+			final LiteLinkedList stack = values.get(key);
+			if (stack == null) return false;
+			if (stack.getValue() == null) return false;
+			return true;
+		} finally {
+			rwLock.readLock().unlock();
+		}
 	}
 
 	
@@ -114,10 +142,15 @@ public abstract class Parameterized {
 	 * @param defaultValue the default value to return if the parameter is not found - may be <code>null</code>
 	 * @return the value of the parameter or <code>defaultValue</code> if not found
 	 */
-	protected Object getParameter(final String key, final Object defaultValue) {
+	protected Object getParameter(final String key, final Object defaultValue) {		
 		if (key == null) return defaultValue;
-		final LiteLinkedList stack = values.get(key);
-		return stack == null || stack.getValue() == null ? defaultValue : stack.getValue();
+		rwLock.readLock().lock();
+		try {
+			final LiteLinkedList stack = values.get(key);
+			return stack == null || stack.getValue() == null ? defaultValue : stack.getValue();
+		} finally {
+			rwLock.readLock().unlock();
+		}
 	}
 	
 	/**
@@ -127,9 +160,14 @@ public abstract class Parameterized {
 	 */
 	protected int numVersions(final String key) {
 		if (key == null) return 0;
-		final LiteLinkedList stack = values.get(key);
-		if (stack == null) return 0;
-		return stack.length();
+		rwLock.readLock().lock();
+		try {
+			final LiteLinkedList stack = values.get(key);
+			if (stack == null) return 0;
+			return stack.length();
+		} finally {
+			rwLock.readLock().unlock();
+		}
 	}
 	
 	private static final class LiteLinkedList {
