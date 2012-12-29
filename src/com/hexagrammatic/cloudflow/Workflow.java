@@ -235,12 +235,12 @@ public class Workflow extends Parameterized {
 					return;
 				} catch (TimeoutException te) {
 					result.cancel(true);
-					if (trynum == step.getMaxRetries()) {
+					if (trynum == step.getMaxRetries() && !step.isOptional()) {
 						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
 																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 					}
 				} catch (ExecutionException ee) {
-					if (trynum == step.getMaxRetries()) throw ee;
+					if (trynum == step.getMaxRetries() && !step.isOptional()) throw ee;
 				}	
 				waitBeforeRetry(step);
 				step.rollback();

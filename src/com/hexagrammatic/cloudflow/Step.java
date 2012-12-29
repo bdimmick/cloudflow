@@ -17,7 +17,6 @@ import org.apache.commons.lang.Validate;
  * @see Workflow
  */
 public abstract class Step extends Parameterized {	
-	//TODO: Enable 'skip on failure' mode
 	private String name = getClass().getSimpleName();
 	private Workflow workflow = null;
 	private long timeoutValue = -1;
@@ -25,6 +24,7 @@ public abstract class Step extends Parameterized {
 	private int maxRetries = 0;
 	private long waitBetweenTriesValue = -1;
 	private TimeUnit waitBetweenTriesUnits = TimeUnit.SECONDS;
+	private boolean optional = false;
 
 	/**
 	 * Gets the name of this step.
@@ -260,6 +260,26 @@ public abstract class Step extends Parameterized {
 		this.waitBetweenTriesUnits = waitBetweenTriesUnits;
 	}
 	
+	/**
+	 * Determines if this step is optional.  Optional steps are run like any other steps,
+	 * but if they fail to complete execution, either through timeout or an exceptional case,
+	 * they do not cause the workflow to fail.  Steps are not optional by default.
+	 * @return <code>true</code> if the step is optional, <code>false</code> otherwise.
+	 */
+	public boolean isOptional() {
+		return optional;
+	}
+
+	/**
+	 * Sets if this step is optional.  Optional steps are run like any other steps,
+	 * but if they fail to complete execution, either through timeout or an exceptional case,
+	 * they do not cause the workflow to fail.
+	 * @param optional provide <code>true</code> if the step is optional, <code>false</code> if the step should cause the workflow to fail.
+	 */
+	public void setOptional(boolean optional) {
+		this.optional = optional;
+	}
+
 	/**
 	 * Body of step execution logic.  Implementors must override this method and implement whatever
 	 * the step has to do.  Implementors may feel free to let unchecked exceptions

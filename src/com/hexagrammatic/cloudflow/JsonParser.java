@@ -240,23 +240,23 @@ public class JsonParser {
 				pre(step);
 				
 				JsonElement je = obj.get("maxRetries");
-				if (je!=null) {
-					if (je.isJsonPrimitive()) {
+				if (je!=null && !je.isJsonNull()) {
+					if (je.isJsonPrimitive() && je.getAsJsonPrimitive().isNumber()) {
 						step.setMaxRetries(je.getAsInt());
 					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'maxRetries' value.", je.toString()));
 					obj.remove("maxRetries");
 				}
 				
 				je = obj.get("name");
-				if (je!=null) {
+				if (je!=null && !je.isJsonNull()) {
 					if (je.isJsonPrimitive()) {
-						step.setName(je.getAsString());
+						step.setName(je.getAsString());					
 					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'name' value.", je.toString()));
 					obj.remove("name");
 				}
 
 				je = obj.get("timeout");
-				if (je!=null) {
+				if (je!=null && !je.isJsonNull()) {
 					if (je.isJsonPrimitive()) {
 						step.setTimeout(je.getAsString());
 					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'timeout' value.", je.toString()));
@@ -264,13 +264,20 @@ public class JsonParser {
 				}
 
 				je = obj.get("waitBetweenTries");
-				if (je!=null) {
+				if (je!=null && !je.isJsonNull()) {
 					if (je.isJsonPrimitive()) {
 						step.setWaitBetweenTries(je.getAsString());
-					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'waitBetweenTries' value."));
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'waitBetweenTries' value.", je.toString()));
 					obj.remove("waitBetweenTries");
 				}
 
+				je = obj.get("optional");
+				if (je!=null && !je.isJsonNull()) {
+					if (je.isJsonPrimitive() && je.getAsJsonPrimitive().isBoolean()) {						
+						step.setOptional(je.getAsBoolean());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'optional' value.", je.toString()));					
+				}
+				
 				for (final Map.Entry<String, JsonElement> entry: obj.entrySet()) {						
 					JsonElement element = entry.getValue();						
 					if (element == null) {
