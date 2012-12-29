@@ -9,7 +9,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Unit tests for the <code>com.hexagrammatic.cloudflow.Parameterized</code> type.
  * @author Bill Dimmick <me@billdimmick.com>
  * @since 2012.12
  */

@@ -9,9 +9,8 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 /**
- * Unit tests for various utilities.
- * 
  * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
  */
 public class UtilsTest {
 

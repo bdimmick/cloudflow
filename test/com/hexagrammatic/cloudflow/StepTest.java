@@ -8,6 +8,10 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
+ */
 public class StepTest {
 
 	private Step step;
@@ -32,7 +36,7 @@ public class StepTest {
 		step.setName(name);
 		assertEquals(name, step.getName());
 	}
-	
+		
 	@Test(expected=IllegalArgumentException.class)
 	public void testNullName() {
 		step.setName(null);
@@ -43,6 +47,19 @@ public class StepTest {
 		step.setName("   ");
 	}
 	
+	@Test
+	public void testDefaultOptional() {
+		assertFalse(step.isOptional());
+	}
+	
+	@Test
+	public void testExplicitOptional() {
+		step.setOptional(true);
+		assertTrue(step.isOptional());
+		step.setOptional(false);
+		assertFalse(step.isOptional());
+	}
+
 	@Test
 	public void testTimeoutAsLongWithUnsetUnits() {
 		final long value = 1;

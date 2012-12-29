@@ -19,10 +19,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.hexagrammatic.cloudflow.JsonParser.WorkflowCreationException;
 
 /**
  * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
  */
 public class JsonParserTest {
 
@@ -155,7 +155,34 @@ public class JsonParserTest {
 		parser.populateStep(obj);
 	}
 
-	
+	@Test
+	public void testStepCreationWithOptionalAssignment() throws Exception {	
+		final boolean value = true;
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("optional", new JsonPrimitive(value));
+		final Step step = parser.populateStep(obj);
+		assertNotNull(step);
+		assertEquals(SimpleStep.class, step.getClass());
+		assertEquals(value, step.isOptional());		
+	}
+
+	@Test(expected = WorkflowCreationException.class)
+	public void testStepCreationWithNonBooleanPrimitiveOptionalAssignment() throws Exception {	
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("optional", new JsonPrimitive("huh huh"));
+		parser.populateStep(obj);
+	}	
+
+	@Test(expected = WorkflowCreationException.class)
+	public void testStepCreationWithNonPrimitiveOptionalAssignment() throws Exception {	
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("optional", new JsonArray());
+		parser.populateStep(obj);
+	}	
+
 	@Test(expected=WorkflowCreationException.class)
 	public void testPrivateStepCreation() throws Exception {	
 		final JsonObject obj = new JsonObject();

@@ -303,22 +303,5 @@ public class JsonParser {
 			throw new WorkflowCreationException(e);
 		}
 		return step;
-	}
-	
-	/**
-	 * Exception type thrown in the case that workflow creation fails.
-	 * @author Bill Dimmick <me@billdimmick.com>
-	 * @since 2012.12
-	 */
-	public static class WorkflowCreationException extends Exception {
-		private static final long serialVersionUID = -4095197911433761427L;
-
-		public WorkflowCreationException(final Throwable cause) {
-			super(cause);
-		}
-		
-		public WorkflowCreationException(final String message) {
-			super(message);
-		}
-	}
+	}	
 }

@@ -13,6 +13,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * @author Bill Dimmick <me@billdimmick.com>
+ * @since 2012.12
+ */
 public class WorkflowTest {
 
 	private Workflow workflow;
@@ -191,7 +195,57 @@ public class WorkflowTest {
 		workflow.add(step);
 		workflow.execute();
 	}
+
+	@Test
+	public void testStepIsOptionalWithException() throws TimeoutException {
+		final Step optional = new Step() {			
+			@Override
+			public void execute() {
+				throw new NullPointerException();
+			}
+		};
+		optional.setOptional(true);
 		
+		final AtomicBoolean ran = new AtomicBoolean(false);
+		final Step step = new Step() {			
+			@Override
+			public void execute() {
+				ran.set(true);
+			}
+		};
+		
+		workflow.add(optional);
+		workflow.add(step);
+		workflow.execute();
+		assertTrue(ran.get());
+	}
+
+	@Test
+	public void testStepIsOptionalWithTimeout() throws TimeoutException {
+		final Step optional = new Step() {			
+			@Override
+			public void execute() {
+				try { Thread.sleep(1000); } catch (InterruptedException ie) {};
+			}
+		};
+		optional.setTimeoutValue(10);
+		optional.setTimeoutUnits(MILLISECONDS);		
+		optional.setOptional(true);
+		
+		final AtomicBoolean ran = new AtomicBoolean(false);
+		final Step step = new Step() {			
+			@Override
+			public void execute() {
+				ran.set(true);
+			}
+		};
+		
+		workflow.add(optional);
+		workflow.add(step);
+		workflow.execute();
+		assertTrue(ran.get());
+	}
+	
 	@Test
 	public void testStepExceptionRetryNoWait() throws TimeoutException {
 		final AtomicInteger count = new AtomicInteger();
