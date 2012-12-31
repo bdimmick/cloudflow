@@ -11,7 +11,9 @@
 	<property name="dir.dist"		value="dist"/>
 	<property name="test.src"  		value="test"/>
 	<property name="test.dest"		value="test-build"/>
-	<property name="test.out"		value="test-output"/>
+	<property name="test.out"		value="test-out"/>
+    <property name="covr.dest"      value="covr-build"/>
+	<property name="covr.out"		value="covr-out"/>
 
 	<property name="ivy.install.version" value="2.3.0-rc2" />
     <condition property="ivy.home" value="${env.IVY_HOME}">
@@ -38,7 +40,7 @@
 
 	<target name="compile" depends="pre">
 		<mkdir dir="${dir.dest}"/>
-		<javac srcdir="${dir.src}" destdir="${dir.dest}" 
+		<javac srcdir="${dir.src}" destdir="${dir.dest}" debug="true" 
 				classpathref="ivy.path" includeantruntime="false"/> 
 	</target>
 
@@ -68,17 +70,30 @@
 	</target>
 	
 	<target name="test" depends="compile">
+		<taskdef classpathref="ivy.path" resource="tasks.properties"/>
+		<delete file="cobertura.ser"/>
 		<mkdir dir="${test.dest}"/>
 		<mkdir dir="${test.out}"/>
+		<mkdir dir="${covr.out}"/>
+
         <javac srcdir="${test.src}" destdir="${test.dest}" includeantruntime="false">
 			<classpath>
 				<pathelement path="${dir.dest}"/>
 				<path refid="ivy.path"/>
 			</classpath>
 		</javac>
-		<junit printsummary="yes" haltonfailure="yes">
+
+		<cobertura-instrument todir="${covr.dest}">
+			<includeClasses regex=".*"/>
+			<instrumentationClasspath>
+				<pathelement location="${dir.dest}"/>
+			</instrumentationClasspath>
+		</cobertura-instrument>
+
+		<junit fork="yes" printsummary="yes" haltonfailure="yes">
+			<sysproperty key="net.sourceforge.cobertura.datafile" file="cobertura.ser"/>
   			<classpath>
-				<pathelement path="${dir.dest}"/>
+				<pathelement path="${covr.dest}"/>
 				<pathelement path="${test.dest}"/>
                 <path refid="ivy.path"/>
 			</classpath>
@@ -87,6 +102,8 @@
     			<formatter type="xml"/>
   			</test>
 		</junit>
+
+		<cobertura-report format="html" destdir="${covr.out}" srcdir="${dir.src}" />
 	</target>
 	
 	<target name="clean">
@@ -95,6 +112,9 @@
         <delete dir="${dir.dist}"/>
 		<delete dir="${test.dest}"/>
 		<delete dir="${test.out}"/>
+		<delete dir="${covr.dest}"/>
+		<delete dir="${covr.out}"/>
+		<delete file="cobertura.ser"/>
     </target>
 
 	<target name="all" depends="compile, test, javadoc, jar"/>
