@@ -3,12 +3,15 @@
 		A simple Java in-process workflow intended to be used by distributed and virtualized workers.
     </description>
 
-	<property name="version"	value="2012.12"/>
-	<property name="dir.dest"   value="build"/>
-	<property name="dir.doc" 	value="javadoc"/>
-	<property name="dir.src"	value="src"/>
-	<property name="dir.lib"	value="lib"/>
-	<property name="dir.dist"	value="dist"/>
+	<property name="version"		value="2012.12"/>
+	<property name="dir.dest"   	value="build"/>
+	<property name="dir.doc" 		value="javadoc"/>
+	<property name="dir.src"		value="src"/>
+	<property name="dir.lib"		value="lib"/>
+	<property name="dir.dist"		value="dist"/>
+	<property name="test.src"  		value="test"/>
+	<property name="test.dest"		value="test-build"/>
+	<property name="test.out"		value="test-output"/>
 
 	<property name="ivy.install.version" value="2.3.0-rc2" />
     <condition property="ivy.home" value="${env.IVY_HOME}">
@@ -18,18 +21,10 @@
     <property name="ivy.jar.dir" value="${ivy.home}/lib" />
     <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
-    <target name="download-ivy" unless="offline">
-        <mkdir dir="${ivy.jar.dir}"/>
-        <!-- download Ivy from web site so that it can be used even without any special installation -->
-        <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" 
+    <target name="init-ivy">
+		<mkdir dir="${ivy.jar.dir}"/>
+        <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
              dest="${ivy.jar.file}" usetimestamp="true"/>
-    </target>
-
-    <target name="init-ivy" depends="download-ivy">
-      <!-- try to load ivy here from ivy home, in case the user has not already dropped
-              it into ant's lib dir (note that the latter copy will always take precedence).
-              We will not fail as long as local lib dir exists (it may be empty) and
-              ivy is in at least one of ant's lib dir or the local lib dir. -->
         <path id="ivy.lib.path">
             <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
         </path>
@@ -39,7 +34,6 @@
 
 	<target name="pre" depends="init-ivy">
 		<ivy:retrieve pathid="ivy.path"/>
-		<echoproperties/>
 	</target>
 
 	<target name="compile" depends="pre">
@@ -72,12 +66,36 @@
 		<jar destfile="${dir.dist}/${ant.project.name}-${version}.jar" basedir="${dir.dest}"/>
         <jar destfile="${dir.dist}/${ant.project.name}-${version}-src.jar" basedir="${dir.dest}"/>
 	</target>
-
+	
+	<target name="test" depends="compile">
+		<mkdir dir="${test.dest}"/>
+		<mkdir dir="${test.out}"/>
+        <javac srcdir="${test.src}" destdir="${test.dest}" includeantruntime="false">
+			<classpath>
+				<pathelement path="${dir.dest}"/>
+				<path refid="ivy.path"/>
+			</classpath>
+		</javac>
+		<junit printsummary="yes" haltonfailure="yes">
+  			<classpath>
+				<pathelement path="${dir.dest}"/>
+				<pathelement path="${test.dest}"/>
+                <path refid="ivy.path"/>
+			</classpath>
+			<formatter type="plain"/>
+			<test name="com.hexagrammatic.cloudflow.AllTests" todir="${test.out}" haltonfailure="no" outfile="result">
+    			<formatter type="xml"/>
+  			</test>
+		</junit>
+	</target>
+	
 	<target name="clean">
         <delete dir="${dir.dest}"/>
         <delete dir="${dir.doc}"/>
         <delete dir="${dir.dist}"/>
+		<delete dir="${test.dest}"/>
+		<delete dir="${test.out}"/>
     </target>
 
-	<target name="all" depends="compile, javadoc, jar"/>
+	<target name="all" depends="compile, test, javadoc, jar"/>
 </project>

@@ -37,6 +37,7 @@ public class Workflow extends Parameterized {
 	private String name = null;
 	private long timeoutValue = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
+	private ExecutorService executor = null;
 	
 	/**
 	 * Gets the name of this workflow.
@@ -149,7 +150,7 @@ public class Workflow extends Parameterized {
 	 * @throws RuntimeException thrown if a step decides to 'leak' a RuntimeException out of its <code>execute()</code> method.  
 	 */
 	public final void execute() throws TimeoutException {
-		final ExecutorService executor = Executors.newFixedThreadPool(2,
+		executor = Executors.newFixedThreadPool(2,
 					new ThreadFactory() {
 						@Override
 						public Thread newThread(final Runnable r) {
@@ -214,36 +215,39 @@ public class Workflow extends Parameterized {
 		for (final Step step: steps) {
 			int trynum = -1;
 			while (trynum < step.getMaxRetries()) {
-				step.snapshot();
-				trynum++;
-				final Callable<Void> call = new Callable<Void>() {			
-					@Override
-					public Void call() throws Exception {						
-						step.execute();
-						return null;
-					}
-				};
-				
-				final Future<Void> result = executor.submit(call);
-				
 				try {
-					if (step.getTimeoutValue() > 0) {
-						result.get(step.getTimeoutValue(), step.getTimeoutUnits());
-					} else {
-						result.get();
-					}
-					return;
-				} catch (TimeoutException te) {
-					result.cancel(true);
-					if (trynum == step.getMaxRetries() && !step.isOptional()) {
-						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
-																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
-					}
-				} catch (ExecutionException ee) {
-					if (trynum == step.getMaxRetries() && !step.isOptional()) throw ee;
-				}	
-				waitBeforeRetry(step);
-				step.rollback();
+					step.snapshot();
+					trynum++;
+					final Callable<Void> call = new Callable<Void>() {			
+						@Override
+						public Void call() throws Exception {						
+							step.execute();
+							return null;
+						}
+					};
+					
+					final Future<Void> result = executor.submit(call);
+					
+					try {
+						if (step.getTimeoutValue() > 0) {
+							result.get(step.getTimeoutValue(), step.getTimeoutUnits());
+						} else {
+							result.get();
+						}
+						return;
+					} catch (TimeoutException te) {
+						result.cancel(true);
+						if (trynum == step.getMaxRetries() && !step.isOptional()) {
+							throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
+																		Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
+						}
+					} catch (ExecutionException ee) {
+						if (trynum == step.getMaxRetries() && !step.isOptional()) throw ee;
+					}	
+					waitBeforeRetry(step);
+					step.rollback();
+				} finally {
+				}
 			}
 		}
 	}

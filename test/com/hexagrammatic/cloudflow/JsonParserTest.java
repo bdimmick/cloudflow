@@ -463,6 +463,9 @@ public class JsonParserTest {
 			@Override
 			protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 				count.incrementAndGet();
+				if (SimpleStep.class.getName().equals(name)) {
+					return SimpleStep.class;
+				}
 				return super.loadClass(name, resolve);
 			}
 		};
