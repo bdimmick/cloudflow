@@ -106,4 +106,13 @@ public class ParameterizedTest {
 		assertEquals(0, target.numVersions("null"));
 	}
 	
+	@Test
+	public void testNumVersionsWithNullKey() {
+		assertEquals(0, target.numVersions(null));
+	}
+	
+	@Test
+	public void testRemoveParameterWithNullKey() {
+		target.removeParameter(null);
+	}
 }

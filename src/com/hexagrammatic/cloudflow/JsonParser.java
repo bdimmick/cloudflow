@@ -220,6 +220,9 @@ public class JsonParser {
 		for (final JsonElement step: steps) {
 			if (step.isJsonObject()) {
 				workflow.add(populateStep(step.getAsJsonObject()));
+			} else {
+				throw new WorkflowCreationException(String.format("Cannot create workflow Step from non-object value '%s' of type %s.", 
+													step.toString(), step.getClass().getSimpleName()));
 			}
 		}
 	}
@@ -296,11 +299,11 @@ public class JsonParser {
 				throw new WorkflowCreationException(String.format("Provided step class definition '%s' does not extend '%s'", source.getName(), Step.class.getName()));
 			}
 		} catch (final ClassNotFoundException e) {
-			throw new WorkflowCreationException(e);
+			throw new WorkflowCreationException(String.format("Unable to find Step class '%s'.", classname.getAsString()), e);
 		} catch (final InstantiationException e) {
-			throw new WorkflowCreationException(e);
+			throw new WorkflowCreationException(String.format("Unable to create instance of Step class '%s' due to an exception in the constructor.", classname.getAsString()), e);
 		} catch (final IllegalAccessException e) {
-			throw new WorkflowCreationException(e);
+			throw new WorkflowCreationException(String.format("Step class '%s' cannot be constructed due to access restrictions.", classname.getAsString()), e);
 		}
 		return step;
 	}	

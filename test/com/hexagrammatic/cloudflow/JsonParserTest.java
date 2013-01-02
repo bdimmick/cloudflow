@@ -256,7 +256,21 @@ public class JsonParserTest {
 		obj.add("timeout", new JsonArray());
 		parser.populateWorkflow(obj);
 	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithMaxRetriesNonPrimitive() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("maxRetries", new JsonArray());
+		parser.populateWorkflow(obj);
+	}
 	
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWithWaitBetweenTriesNonPrimitive() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("waitBetweenTries", new JsonArray());
+		parser.populateWorkflow(obj);
+	}
+
 	@Test
 	public void testWorkflowCreationWithPrimitiveParameter() throws Exception {
 		final JsonObject obj = new JsonObject();
@@ -306,6 +320,15 @@ public class JsonParserTest {
 			i++;
 		}		
 	}
+
+	@Test(expected=WorkflowCreationException.class)
+	public void testNonJSONObjectInStepsCreation() throws Exception {
+		final Workflow workflow = new Workflow();
+		final JsonArray array = new JsonArray();
+		array.add(new JsonPrimitive(true));
+		parser.populateSteps(array, workflow);
+	}
+
 	
 	@Test
 	public void testWorkflowCreationWithJsonArray() throws Exception {

@@ -229,7 +229,7 @@ public class StepTest {
 	}
 	
 	@Test
-	public void testParameterizationBubbling() {
+	public void testParameterizationAdditionBubbling() {
 		final Workflow workflow = new Workflow();
 
 		step.setWorkflow(workflow);
@@ -238,4 +238,59 @@ public class StepTest {
 		assertEquals("bar", step.getParameter("foo"));
 		assertEquals("bar", workflow.getParameter("foo"));
 	}
+
+	@Test
+	public void testParameterizationRemovalBubbling() {
+		final Workflow workflow = new Workflow();
+		final String key = "foo";
+		final String value = "bar";
+		step.setWorkflow(workflow);
+		step.addParameter(key, value);
+		
+		assertEquals(value, step.getParameter(key));
+		assertEquals(value, workflow.getParameter(key));
+		
+		step.removeParameter(key);
+		assertNull(step.getParameter(key));
+		assertNull(workflow.getParameter(key));
+	}
+
+	@Test
+	public void testParameterizationSnapshotRollbackBubbling() {
+		final Workflow workflow = new Workflow();
+		final String key = "foo";
+		final String value1 = "bar";
+		final String value2 = "baz";
+		step.setWorkflow(workflow);
+		step.addParameter(key, value1);
+		
+		assertEquals(value1, step.getParameter(key));
+		assertEquals(value1, workflow.getParameter(key));
+		
+		step.snapshot();
+		
+		workflow.addParameter(key, value2);
+
+		assertEquals(value1, step.getParameter(key));
+		assertEquals(value2, workflow.getParameter(key));
+		
+		step.rollback();
+		
+		assertEquals(value1, step.getParameter(key));
+		assertEquals(value1, workflow.getParameter(key));
+	}
+
+
+	@Test
+	public void testParameterizationHasParameterBubbling() {
+		final Workflow workflow = new Workflow();
+		final String key = "foo";
+		final String value = "bar";
+		step.setWorkflow(workflow);
+		workflow.addParameter(key, value);
+		assertTrue(workflow.hasParameter(key));
+		assertTrue(step.hasParameter(key));
+	}
+
+	
 }

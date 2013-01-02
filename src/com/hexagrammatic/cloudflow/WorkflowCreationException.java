@@ -19,10 +19,6 @@ public class WorkflowCreationException extends Exception {
 		super(message, cause);
 	}
 	
-	public WorkflowCreationException(final Throwable cause) {
-		super(cause);
-	}
-	
 	public WorkflowCreationException(final String message) {
 		super(message);
 	}
