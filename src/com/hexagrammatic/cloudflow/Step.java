@@ -287,5 +287,5 @@ public abstract class Step extends Parameterized {
 	 * for retries by ignoring them and, when the retries are exhausted, will throw the instance of the
 	 * unchecked exception out of the body of the workflow's <code>execute()</code> call to let callers handle.
 	 */
-	protected abstract void execute();
+	protected abstract void execute() throws InterruptedException;
 }

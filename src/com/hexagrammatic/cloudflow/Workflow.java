@@ -11,6 +11,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.Validate;
 
@@ -31,13 +33,16 @@ import org.apache.commons.lang.Validate;
  * @see Step
  */
 public class Workflow extends Parameterized {
-	//TODO: Add stop and pause methods?
+	//TODO: Add pause method?
 	//TODO: Add insertAfter methods?
-	private ArrayList<Step> steps = new ArrayList<Step>();
+	private final ArrayList<Step> steps = new ArrayList<Step>();
 	private String name = null;
 	private long timeoutValue = -1;
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
 	private ExecutorService executor = null;
+	private AtomicBoolean executing = new AtomicBoolean(false);
+	private AtomicReference<Future<Void>> workflowFuture = new AtomicReference<Future<Void>>();
+	private AtomicReference<Future<Void>> currstepFuture = new AtomicReference<Future<Void>>();
 	
 	/**
 	 * Gets the name of this workflow.
@@ -142,6 +147,14 @@ public class Workflow extends Parameterized {
 	}
 	
 	/**
+	 * Determines if this workflow is currently executing.
+	 * @return <code>true</code> if it <code>execute()</code> has been called and is in progress, <code>false</code> otherwise.
+	 */
+	public final boolean isExecuting() {
+		return this.executing.get();
+	}
+	
+	/**
 	 * Executes the workflow.  Executes each step in order, including managing timeouts and retries for the
 	 * steps and workflow.  
 	 * <p>
@@ -149,7 +162,7 @@ public class Workflow extends Parameterized {
 	 * @throws TimeoutException if a single step times out without any remaining retries or the whole workflow times out
 	 * @throws RuntimeException thrown if a step decides to 'leak' a RuntimeException out of its <code>execute()</code> method.  
 	 */
-	public final void execute() throws TimeoutException {
+	public final void execute() throws TimeoutException, InterruptedException {
 		executor = Executors.newFixedThreadPool(2,
 					new ThreadFactory() {
 						@Override
@@ -172,6 +185,8 @@ public class Workflow extends Parameterized {
 		};
 		
 		final Future<Void> result = executor.submit(call);
+		executing.set(true);
+		workflowFuture.set(result);
 		
 		try {
 			if (getTimeoutValue() > 0) {
@@ -199,8 +214,10 @@ public class Workflow extends Parameterized {
 			} else {
 				throw new IllegalStateException("Unexpected non-runtime exception encountered.", cause);
 			}
-		} catch (final InterruptedException ie) {
-			Thread.currentThread().interrupt();
+		} finally {
+			result.cancel(true);
+			workflowFuture.set(null);
+			executing.set(false);
 		}
 	}
 	
@@ -215,39 +232,61 @@ public class Workflow extends Parameterized {
 		for (final Step step: steps) {
 			int trynum = -1;
 			while (trynum < step.getMaxRetries()) {
+				step.snapshot();
+				trynum++;
+				final Callable<Void> call = new Callable<Void>() {			
+					@Override
+					public Void call() throws Exception {						
+						step.execute();
+						return null;
+					}
+				};
+				
+				final Future<Void> result = executor.submit(call);
+				currstepFuture.set(result);
 				try {
-					step.snapshot();
-					trynum++;
-					final Callable<Void> call = new Callable<Void>() {			
-						@Override
-						public Void call() throws Exception {						
-							step.execute();
-							return null;
-						}
-					};
-					
-					final Future<Void> result = executor.submit(call);
-					
-					try {
-						if (step.getTimeoutValue() > 0) {
-							result.get(step.getTimeoutValue(), step.getTimeoutUnits());
-						} else {
-							result.get();
-						}
-						return;
-					} catch (TimeoutException te) {
-						result.cancel(true);
-						if (trynum == step.getMaxRetries() && !step.isOptional()) {
-							throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
-																		Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
-						}
-					} catch (ExecutionException ee) {
-						if (trynum == step.getMaxRetries() && !step.isOptional()) throw ee;
-					}	
-					waitBeforeRetry(step);
-					step.rollback();
+					if (step.getTimeoutValue() > 0) {
+						result.get(step.getTimeoutValue(), step.getTimeoutUnits());
+					} else {
+						result.get();
+					}
+					return;
+				} catch (TimeoutException te) {
+					result.cancel(true);
+					if (trynum == step.getMaxRetries() && !step.isOptional()) {
+						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
+																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
+					}
+				} catch (ExecutionException ee) {
+					if (trynum == step.getMaxRetries() && !step.isOptional()) throw ee;
 				} finally {
+					result.cancel(true);
+					currstepFuture.set(null);
 				}
+				waitBeforeRetry(step);
+				step.rollback();
+			}
+		}
+	}
+
+	/**
+	 * Halts the execution of a workflow that is in progress.  Makes a best-faith effort at halting
+	 * execution: if a task handles and swallows <code>InterruptedException</code>s, then it is highly
+	 * unlikely that halting execution will be performed properly.
+	 * @since 2013.01
+	 */
+	public void halt() {
+		if (executing.get()) {
+			if (currstepFuture.get() != null) {
+				currstepFuture.get().cancel(true);
+			}
+
+			if (workflowFuture.get() != null) {
+				workflowFuture.get().cancel(true);
+			}
+
+			if (executor!=null && !executor.isShutdown()) {
+				executor.shutdownNow();
 			}
 		}
 	}

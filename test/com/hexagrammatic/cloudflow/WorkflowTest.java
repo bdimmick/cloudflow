@@ -3,6 +3,9 @@ package com.hexagrammatic.cloudflow;
 import static java.util.concurrent.TimeUnit.*;
 import static org.junit.Assert.*;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -129,7 +132,7 @@ public class WorkflowTest {
 	}
 	
 	@Test
-	public void testSuccessfulSimpleWorkflow() throws TimeoutException {
+	public void testSuccessfulSimpleWorkflow() throws TimeoutException, InterruptedException {
 		final AtomicBoolean ran = new AtomicBoolean();
 		final Step step = new Step() {			
 			@Override
@@ -142,7 +145,7 @@ public class WorkflowTest {
 	}
 
 	@Test(expected=TimeoutException.class)
-	public void testStepTimeout() throws TimeoutException {
+	public void testStepTimeout() throws TimeoutException, InterruptedException {
 		final Step step = new Step() {			
 			@Override
 			public void execute() {
@@ -156,7 +159,7 @@ public class WorkflowTest {
 	}
 
 	@Test(expected=TimeoutException.class)
-	public void testWorkflowTimeoutNoName() throws TimeoutException {
+	public void testWorkflowTimeoutNoName() throws TimeoutException, InterruptedException {
 		final Step step = new Step() {			
 			@Override
 			public void execute() {
@@ -170,7 +173,7 @@ public class WorkflowTest {
 	}
 	
 	@Test(expected=TimeoutException.class)
-	public void testWorkflowTimeoutWithName() throws TimeoutException {
+	public void testWorkflowTimeoutWithName() throws TimeoutException, InterruptedException {
 		final Step step = new Step() {			
 			@Override
 			public void execute() {
@@ -185,7 +188,7 @@ public class WorkflowTest {
 	}
 
 	@Test(expected=NullPointerException.class)
-	public void testStepException() throws TimeoutException {
+	public void testStepException() throws TimeoutException, InterruptedException {
 		final Step step = new Step() {			
 			@Override
 			public void execute() {
@@ -197,7 +200,7 @@ public class WorkflowTest {
 	}
 
 	@Test
-	public void testStepIsOptionalWithException() throws TimeoutException {
+	public void testStepIsOptionalWithException() throws TimeoutException, InterruptedException {
 		final Step optional = new Step() {			
 			@Override
 			public void execute() {
@@ -221,7 +224,7 @@ public class WorkflowTest {
 	}
 
 	@Test
-	public void testStepIsOptionalWithTimeout() throws TimeoutException {
+	public void testStepIsOptionalWithTimeout() throws TimeoutException, InterruptedException {
 		final Step optional = new Step() {			
 			@Override
 			public void execute() {
@@ -247,7 +250,7 @@ public class WorkflowTest {
 	}
 	
 	@Test
-	public void testStepExceptionRetryNoWait() throws TimeoutException {
+	public void testStepExceptionRetryNoWait() throws TimeoutException, InterruptedException {
 		final AtomicInteger count = new AtomicInteger();
 		final Step step = new Step() {			
 			@Override
@@ -266,7 +269,7 @@ public class WorkflowTest {
 	}
 
 	@Test
-	public void testStepExceptionRetryWithWait() throws TimeoutException {
+	public void testStepExceptionRetryWithWait() throws TimeoutException, InterruptedException {
 		final AtomicInteger count = new AtomicInteger();
 		final Step step = new Step() {			
 			@Override
@@ -287,7 +290,7 @@ public class WorkflowTest {
 	}
 
 	@Test
-	public void testStepTimeoutRetryWithWait() throws TimeoutException {
+	public void testStepTimeoutRetryWithWait() throws TimeoutException, InterruptedException, InterruptedException {
 		final AtomicInteger count = new AtomicInteger();
 		final Step step = new Step() {			
 			@Override
@@ -308,9 +311,41 @@ public class WorkflowTest {
 		assertEquals(2, count.get());
 		assertEquals(step.getWaitBetweenTriesValue(), totalTimeRetryWaiting.get());
 	}
+	
+	@Test
+	public void testWorkflowHalt() throws Exception {
+		final AtomicBoolean finished = new AtomicBoolean(false);
+		final Step step = new Step() {			
+			@Override
+			public void execute() throws InterruptedException {
+				Thread.sleep(10000);
+				finished.set(true);
+			}
+		};
+		workflow.add(step);
+		
+		final ExecutorService pool = Executors.newCachedThreadPool();
+		try {
+			pool.submit(new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					workflow.execute();
+					return null;
+				}
+			});			
+			Thread.sleep(100);
+			assertTrue(workflow.isExecuting());
+			workflow.halt();
+			Thread.sleep(100);
+			assertFalse(workflow.isExecuting());
+			assertFalse(finished.get());			
+		} finally {
+			pool.shutdownNow();
+		}
+	}
 
 	@Test
-	public void testStepParametersRollback() throws TimeoutException {
+	public void testStepParametersRollback() throws TimeoutException, InterruptedException {
 		final AtomicInteger count = new AtomicInteger();
 		final Step step = new Step() {			
 			@Override
