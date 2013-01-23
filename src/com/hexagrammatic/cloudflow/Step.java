@@ -30,7 +30,7 @@ public abstract class Step extends Parameterized {
 	 * Gets the name of this step.
 	 * @return the name of the step; if unset, the 'simple name' of the class is used
 	 */
-	protected final String getName() {
+	public final String getName() {
 		return name;
 	}
 	
@@ -38,7 +38,7 @@ public abstract class Step extends Parameterized {
 	 * Sets the name of the step
 	 * @param name the name of the step - may not be blank or empty
 	 */
-	protected final void setName(final String name) {
+	public final void setName(final String name) {
 		Validate.isTrue(!StringUtils.isBlank(name), "The provided name may not be null or empty.");
 		this.name = name;
 	}
@@ -65,7 +65,7 @@ public abstract class Step extends Parameterized {
 	 * the parameter.
 	 */
 	@Override
-	protected Object getParameter(final String key, final Object defaultValue) {		
+	public Object getParameter(final String key, final Object defaultValue) {		
 		Object result =  super.getParameter(key, defaultValue);
 		if (result == defaultValue && workflow!=null) {
 			result = workflow.getParameter(key, defaultValue);
@@ -79,7 +79,7 @@ public abstract class Step extends Parameterized {
 	 * to pass on parameters to subsequent steps.
 	 */
 	@Override	
-	protected void addParameter(final String key, final Object value) {
+	public void addParameter(final String key, final Object value) {
 		super.addParameter(key, value);
 		if (workflow != null) {			
 			workflow.addParameter(key, value);
@@ -92,7 +92,7 @@ public abstract class Step extends Parameterized {
 	 * the parameter.
 	 */
 	@Override
-	protected boolean hasParameter(final String key) {
+	public boolean hasParameter(final String key) {
 		if (!super.hasParameter(key)) {
 			if (workflow != null) {
 				return workflow.hasParameter(key);
@@ -108,7 +108,7 @@ public abstract class Step extends Parameterized {
 	 * the workflow is also snapshotted.
 	 */
 	@Override
-	protected void snapshot() {
+	public void snapshot() {
 		super.snapshot();
 		if (workflow!=null) workflow.snapshot();
 	}
@@ -118,7 +118,7 @@ public abstract class Step extends Parameterized {
 	 * the workflow are also rolled back.
 	 */
 	@Override
-	protected void rollback() {		
+	public void rollback() {		
 		super.rollback();
 		if (workflow!=null) workflow.rollback();
 	}
@@ -128,7 +128,7 @@ public abstract class Step extends Parameterized {
 	 * the parameter is also removed from the workflow.
 	 */
 	@Override
-	protected void removeParameter(final String key) {
+	public void removeParameter(final String key) {
 		super.removeParameter(key);
 		if (workflow!=null) workflow.removeParameter(key);
 	}

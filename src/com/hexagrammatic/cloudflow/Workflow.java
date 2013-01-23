@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.Validate;
@@ -43,6 +44,8 @@ public class Workflow extends Parameterized {
 	private AtomicBoolean executing = new AtomicBoolean(false);
 	private AtomicReference<Future<Void>> workflowFuture = new AtomicReference<Future<Void>>();
 	private AtomicReference<Future<Void>> currstepFuture = new AtomicReference<Future<Void>>();
+	private AtomicReference<Step> currstep = new AtomicReference<Step>();
+	private AtomicInteger currstepTries = new AtomicInteger();
 	
 	/**
 	 * Gets the name of this workflow.
@@ -57,7 +60,7 @@ public class Workflow extends Parameterized {
 	 * <code>null</code> is assigned as the name.
 	 * @param name the name to assign - may be null.
 	 */
-	protected final void setName(final String name) {
+	public final void setName(final String name) {
 		if (name==null) {
 			this.name = null;
 			return;
@@ -84,7 +87,7 @@ public class Workflow extends Parameterized {
 	 * Gets the timeout value, which is the numeric component of the overall workflow timeout.
 	 * @return the timeout value, or -1 if the workflow never times out.
 	 */
-	protected long getTimeoutValue() {
+	public long getTimeoutValue() {
 		return timeoutValue;
 	}
 
@@ -94,7 +97,7 @@ public class Workflow extends Parameterized {
 	 * that never time out will always have a timeout value of -1.
 	 * @param timeout the timeout value (See above for special casing about negative values.) 
 	 */
-	protected void setTimeoutValue(final long timeout) {
+	public void setTimeoutValue(final long timeout) {
 		this.timeoutValue = timeout;
 		if (this.timeoutValue < -1) this.timeoutValue = -1; 
 
@@ -104,7 +107,7 @@ public class Workflow extends Parameterized {
 	 * Gets the timeout units, which is the units component of the overall workflow timeout.
 	 * @return the timeout units as a TimeUnit or <code>null</code> if this workflow has no timeout.
 	 */
-	protected TimeUnit getTimeoutUnits() {
+	public TimeUnit getTimeoutUnits() {
 		if (timeoutValue < 0) return null;
 		return timeoutUnits;
 	}
@@ -117,7 +120,7 @@ public class Workflow extends Parameterized {
 	 * @see Workflow#setTimeoutValue(long)
 	 * @throws IllegalArgumentException if the provided argument is <code>null</code>.
 	 */
-	protected void setTimeoutUnits(final TimeUnit timeoutUnits) {
+	public void setTimeoutUnits(final TimeUnit timeoutUnits) {
 		Validate.notNull(timeoutUnits, "The provided timeout units may not be null.");
 		this.timeoutUnits = timeoutUnits;
 	}
@@ -152,6 +155,22 @@ public class Workflow extends Parameterized {
 	 */
 	public final boolean isExecuting() {
 		return this.executing.get();
+	}
+	
+	/**
+	 * Gets a reference to the current step being executed.
+	 * @return the current step or <code>null</code> if no step is being executed.
+	 */
+	public final Step getCurrentStep() {
+		return currstep.get();
+	}
+	
+	/**
+	 * Gets the number of tries the current step has executed.
+	 * @return the number of tries the step has executed, or <code>0</code> if no tries for this step have been executed.
+	 */
+	public final int getCurrentStepTries() {
+		return currstepTries.get();
 	}
 	
 	/**
@@ -230,10 +249,10 @@ public class Workflow extends Parameterized {
 	 */
 	private final void executeSteps(final ExecutorService executor) throws TimeoutException, ExecutionException, InterruptedException {
 		for (final Step step: steps) {
-			int trynum = -1;
-			while (trynum < step.getMaxRetries()) {
+			currstepTries.set(0);
+			while (currstepTries.get() <= step.getMaxRetries()) {
 				step.snapshot();
-				trynum++;
+				currstepTries.incrementAndGet();
 				final Callable<Void> call = new Callable<Void>() {			
 					@Override
 					public Void call() throws Exception {						
@@ -244,6 +263,7 @@ public class Workflow extends Parameterized {
 				
 				final Future<Void> result = executor.submit(call);
 				currstepFuture.set(result);
+				currstep.set(step);
 				try {
 					if (step.getTimeoutValue() > 0) {
 						result.get(step.getTimeoutValue(), step.getTimeoutUnits());
@@ -253,19 +273,21 @@ public class Workflow extends Parameterized {
 					return;
 				} catch (TimeoutException te) {
 					result.cancel(true);
-					if (trynum == step.getMaxRetries() && !step.isOptional()) {
+					if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
 						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
 																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 					}
 				} catch (ExecutionException ee) {
-					if (trynum == step.getMaxRetries() && !step.isOptional()) throw ee;
+					if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) throw ee;
 				} finally {
 					result.cancel(true);
 					currstepFuture.set(null);
+					currstep.set(null);
 				}
 				waitBeforeRetry(step);
 				step.rollback();
 			}
+			currstepTries.set(0);
 		}
 	}
 

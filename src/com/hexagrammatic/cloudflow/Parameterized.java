@@ -30,7 +30,7 @@ public abstract class Parameterized {
      * for before or after snapshotting; such implementations <i>must</i> contain a call to 
      * <code>super.snapshot()</code>.
      */
-    protected void snapshot() {
+	public void snapshot() {
     	rwLock.writeLock().lock();
     	try {
 	    	for (final Map.Entry<String, LiteLinkedList> entry: values.entrySet()) {
@@ -50,7 +50,7 @@ public abstract class Parameterized {
      * Note: Implementors may override this method to put in hooks for before or after rolling back; 
      * such implementations <i>must</i> contain a call to <code>super.rollback()</code>.
      */
-    protected void rollback() {
+	public void rollback() {
     	rwLock.writeLock().lock();
     	try {
 	    	final ArrayList<String> removals = new ArrayList<String>();
@@ -76,7 +76,7 @@ public abstract class Parameterized {
      * @param key the parameter key - may not be <code>null</code>
      * @param value the parameter value = may be <code>null</code>
      */
-	protected void addParameter(final String key, final Object value) {
+	public void addParameter(final String key, final Object value) {
 		Validate.notNull(key, "The provided key may not be null.");
 		rwLock.writeLock().lock();
 		try {
@@ -95,7 +95,7 @@ public abstract class Parameterized {
 	 * Removes a parameter from this object.
 	 * @param key the parameter key - may be <code>null</code>
 	 */
-	protected void removeParameter(final String key) {
+	public void removeParameter(final String key) {
 		if (key == null) return;
 		rwLock.writeLock().lock();
 		try {
@@ -113,7 +113,7 @@ public abstract class Parameterized {
 	 * @param key the paremeter key to check - may be <code>null</code>.
 	 * @return <code>true</code> if this object contains a parameter with this key, <code>false</code> otherwise.
 	 */
-	protected boolean hasParameter(final String key) {
+	public boolean hasParameter(final String key) {
 		if (key == null) return false;
 		rwLock.readLock().lock();
 		try {
@@ -132,7 +132,7 @@ public abstract class Parameterized {
 	 * @param key the parameter key to find - may be <code>null</code>
 	 * @return the value of the parameter or <code>null</code> if not found
 	 */
-	protected Object getParameter(final String key) {		
+	public Object getParameter(final String key) {		
 		return getParameter(key, null);
 	}
 
@@ -142,7 +142,7 @@ public abstract class Parameterized {
 	 * @param defaultValue the default value to return if the parameter is not found - may be <code>null</code>
 	 * @return the value of the parameter or <code>defaultValue</code> if not found
 	 */
-	protected Object getParameter(final String key, final Object defaultValue) {		
+	public Object getParameter(final String key, final Object defaultValue) {		
 		if (key == null) return defaultValue;
 		rwLock.readLock().lock();
 		try {
@@ -158,7 +158,7 @@ public abstract class Parameterized {
 	 * @param key the parameter key to check - may be <code>null</code>
 	 * @return the number of versions snapshotted
 	 */
-	protected int numVersions(final String key) {
+	public int numVersions(final String key) {
 		if (key == null) return 0;
 		rwLock.readLock().lock();
 		try {
