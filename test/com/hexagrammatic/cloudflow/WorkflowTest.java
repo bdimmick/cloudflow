@@ -166,10 +166,12 @@ public class WorkflowTest {
 				try { Thread.sleep(1000); } catch (final InterruptedException ie) {}
 			}
 		};
-		workflow.setTimeoutValue(10);
+		workflow.setTimeoutValue(100);
 		workflow.setTimeoutUnits(MILLISECONDS);
 		workflow.add(step);
 		workflow.execute();
+		assertEquals(step, workflow.getCurrentStep());
+		assertEquals(1, workflow.getCurrentStepTries());		
 	}
 	
 	@Test(expected=TimeoutException.class)
@@ -181,10 +183,12 @@ public class WorkflowTest {
 			}
 		};
 		workflow.setName("workflow");
-		workflow.setTimeoutValue(10);
+		workflow.setTimeoutValue(100);
 		workflow.setTimeoutUnits(MILLISECONDS);
 		workflow.add(step);
 		workflow.execute();
+		assertEquals(step, workflow.getCurrentStep());
+		assertEquals(1, workflow.getCurrentStepTries());
 	}
 
 	@Test(expected=NullPointerException.class)
