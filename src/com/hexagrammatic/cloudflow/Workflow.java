@@ -198,7 +198,7 @@ public class Workflow extends Parameterized {
 		final Callable<Void> call = new Callable<Void>() {			
 			@Override
 			public Void call() throws Exception {
-				executeSteps(executor);
+				executeSteps();
 				return null;
 			}
 		};
@@ -242,55 +242,66 @@ public class Workflow extends Parameterized {
 	
 	/**
 	 * Executes the steps in order, inlcuding handling timeouts and retries.
-	 * @param executor the executor in which to execute the steps; never null.
 	 * @throws TimeoutException if a step times out without remaining retries.
 	 * @throws ExecutionException if a step lets an unhandled exeception leak out of its <code>execute()</code> method.
 	 * @throws InterruptedException if the step is interrupted while being executed.
 	 */
-	private final void executeSteps(final ExecutorService executor) throws TimeoutException, ExecutionException, InterruptedException {
+	private final void executeSteps() throws TimeoutException, ExecutionException, InterruptedException {
 		for (final Step step: steps) {
-			currstepTries.set(0);
-			while (currstepTries.get() <= step.getMaxRetries()) {
-				step.snapshot();
-				currstepTries.incrementAndGet();
-				final Callable<Void> call = new Callable<Void>() {			
-					@Override
-					public Void call() throws Exception {						
-						step.execute();
-						return null;
-					}
-				};
-				
-				final Future<Void> result = executor.submit(call);
-				currstepFuture.set(result);
-				currstep.set(step);
-				try {
-					if (step.getTimeoutValue() > 0) {
-						result.get(step.getTimeoutValue(), step.getTimeoutUnits());
-					} else {
-						result.get();
-					}
-					return;
-				} catch (TimeoutException te) {
-					result.cancel(true);
-					if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
-						throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
-																	Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
-					}
-				} catch (ExecutionException ee) {
-					if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) throw ee;
-				} finally {
-					result.cancel(true);
-					currstepFuture.set(null);
-					currstep.set(null);
-				}
-				waitBeforeRetry(step);
-				step.rollback();
-			}
-			currstepTries.set(0);
+			executeStep(step);
 		}
 	}
 
+	/**
+	 * Executes and individual step, inlcuding handling timeouts and retries.
+	 * @param step the step itself; if <code>null</code>, this method instantly returns
+	 * @throws TimeoutException if the step times out without remaining retries.
+	 * @throws ExecutionException if the step lets an unhandled exeception leak out of its <code>execute()</code> method.
+	 * @throws InterruptedException if the step is interrupted while being executed.
+	 */
+	private final void executeStep(final Step step)  throws TimeoutException, ExecutionException, InterruptedException {
+		if (step == null) return;
+		currstepTries.set(0);
+		while (currstepTries.get() <= step.getMaxRetries()) {
+			step.snapshot();
+			currstepTries.incrementAndGet();
+			final Callable<Void> call = new Callable<Void>() {			
+				@Override
+				public Void call() throws Exception {						
+					step.execute();
+					return null;
+				}
+			};
+			
+			final Future<Void> result = executor.submit(call);
+			currstepFuture.set(result);
+			currstep.set(step);
+			try {
+				if (step.getTimeoutValue() > 0) {
+					result.get(step.getTimeoutValue(), step.getTimeoutUnits());
+				} else {
+					result.get();
+				}
+				return;
+			} catch (TimeoutException te) {
+				result.cancel(true);
+				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
+					throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
+																Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
+				}
+			} catch (ExecutionException ee) {
+				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) throw ee;
+			} finally {
+				result.cancel(true);
+				currstepFuture.set(null);
+				currstep.set(null);
+			}
+			waitBeforeRetry(step);
+			step.rollback();
+		}
+		currstepTries.set(0);		
+	}
+	
 	/**
 	 * Halts the execution of a workflow that is in progress.  Makes a best-faith effort at halting
 	 * execution: if a task handles and swallows <code>InterruptedException</code>s, then it is highly

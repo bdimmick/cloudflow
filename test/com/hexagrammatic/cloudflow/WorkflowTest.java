@@ -132,7 +132,7 @@ public class WorkflowTest {
 	}
 	
 	@Test
-	public void testSuccessfulSimpleWorkflow() throws TimeoutException, InterruptedException {
+	public void testSuccessfulOneStepWorkflow() throws TimeoutException, InterruptedException {
 		final AtomicBoolean ran = new AtomicBoolean();
 		final Step step = new Step() {			
 			@Override
@@ -144,6 +144,27 @@ public class WorkflowTest {
 		assertTrue(ran.get());
 	}
 
+	@Test
+	public void testSuccessfulSimpleWorkflow() throws TimeoutException, InterruptedException {
+		final Workflow workflow = new Workflow();
+		final AtomicBoolean[] ran = new AtomicBoolean[20];
+		for (int i=0; i<ran.length; i++) {
+			final int j = i;
+			ran[j]=new AtomicBoolean();
+			final Step step = new Step() {			
+				@Override
+				public void execute() { ran[j].set(true); }
+			};
+			workflow.add(step);
+		}
+		workflow.execute();
+		for (int i=0; i<ran.length; i++) {
+			assertTrue(String.format("Step #%d did not run.", i), ran[i].get());
+		}
+	}
+	
+	
+	
 	@Test(expected=TimeoutException.class)
 	public void testStepTimeout() throws TimeoutException, InterruptedException {
 		final Step step = new Step() {			
