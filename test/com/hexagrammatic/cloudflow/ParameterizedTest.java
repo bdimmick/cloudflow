@@ -5,6 +5,9 @@ package com.hexagrammatic.cloudflow;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
+import java.util.UUID;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -114,5 +117,22 @@ public class ParameterizedTest {
 	@Test
 	public void testRemoveParameterWithNullKey() {
 		target.removeParameter(null);
+	}
+	
+	@Test
+	public void testListingParameterNames() {
+		final int num = 10;
+		for (int i=0; i<num; i++) {
+			target.addParameter(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+		}
+		final Collection<String> names = target.getParameterNames();
+		assertEquals(num, names.size());
+		String prev = null;
+		for (final String name: names) {
+			if (prev!=null) {
+				assertTrue(name.compareTo(prev) > 0);
+			}
+			prev = null;
+		}
 	}
 }

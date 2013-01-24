@@ -1,8 +1,10 @@
 package com.hexagrammatic.cloudflow;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -165,6 +167,19 @@ public abstract class Parameterized {
 			final LiteLinkedList stack = values.get(key);
 			if (stack == null) return 0;
 			return stack.length();
+		} finally {
+			rwLock.readLock().unlock();
+		}
+	}
+	
+	/**
+	 * Gets the list of parameter names in this object.
+	 * @return the list of parameter names, sorted.  Never null, possibly empty.
+	 */
+	public Collection<String> getParameterNames() {
+		rwLock.readLock().lock();
+		try {
+			return new TreeSet<String>(values.keySet());
 		} finally {
 			rwLock.readLock().unlock();
 		}
