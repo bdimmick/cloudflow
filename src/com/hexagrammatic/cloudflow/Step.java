@@ -1,6 +1,7 @@
 package com.hexagrammatic.cloudflow;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -27,8 +28,10 @@ public abstract class Step extends Parameterized {
 	private boolean optional = false;
 	private boolean alwaysRun = false;
 	private volatile boolean completed = false;
+	private volatile boolean successful = false;
 	private volatile long startTime = -1;
 	private volatile long endTime = -1;
+	private volatile int tries = 0;	
 		
 	/**
 	 * Gets the name of this step.
@@ -320,6 +323,14 @@ public abstract class Step extends Parameterized {
 		return completed;
 	}
 	
+	/**
+	 * Returns if this step was successful.
+	 * @return <code>true</code> if the step did not time out or throw and exception, <code>false</code> otherwise.
+	 */
+	public boolean isSuccessful() {
+		return successful;
+	}
+	
 	
 	/**
 	 * Returns how long this step ran or has been running, in milliseconds.  If the step is currently running, 
@@ -340,11 +351,21 @@ public abstract class Step extends Parameterized {
 	}
 	
 	/**
+	 * Gets the number of times this specific step instance has been tried, which is 
+	 * equivalent to the number of times <code>execute()</code> has been called.
+	 * @return the number of times <code>execute()</code> has been called.
+	 */
+	public int getTimesTried() {
+		return tries;
+	}
+	
+	/**
 	 * Completes this step.  This marks it as completed and records the time this step ended.
 	 */
-	final void complete() {
+	final void complete(final boolean successful) {
 		this.endTime = System.currentTimeMillis();
 		this.completed = true;
+		this.successful = successful;
 	}
 	
 	/**
@@ -353,5 +374,6 @@ public abstract class Step extends Parameterized {
 	final void start() {
 		this.completed = false;
 		this.startTime = System.currentTimeMillis();
+		this.tries++;
 	}
 }

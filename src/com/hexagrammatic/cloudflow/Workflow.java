@@ -46,7 +46,6 @@ public class Workflow extends Parameterized {
 	private AtomicReference<Future<Void>> workflowFuture = new AtomicReference<Future<Void>>();
 	private AtomicReference<Future<Void>> currstepFuture = new AtomicReference<Future<Void>>();
 	private AtomicReference<Step> currstep = new AtomicReference<Step>();
-	private AtomicInteger currstepTries = new AtomicInteger();
 	
 	/**
 	 * Gets the name of this workflow.
@@ -179,7 +178,7 @@ public class Workflow extends Parameterized {
 	 * @return the number of tries the step has executed, or <code>0</code> if no tries for this step have been executed.
 	 */
 	public final int getCurrentStepTries() {
-		return currstepTries.get();
+		return getCurrentStep().getTimesTried();
 	}
 	
 	/**
@@ -294,11 +293,9 @@ public class Workflow extends Parameterized {
 	 */
 	private final void executeStep(final Step step)  throws TimeoutException, ExecutionException, InterruptedException {
 		if (step == null) return;
-		currstepTries.set(0);
-		while (currstepTries.get() <= step.getMaxRetries()) {			
+		while (step.getTimesTried() <= step.getMaxRetries()) {			
 			step.start();
 			step.snapshot();
-			currstepTries.incrementAndGet();
 			final Callable<Void> call = new Callable<Void>() {			
 				@Override
 				public Void call() throws Exception {						
@@ -316,21 +313,21 @@ public class Workflow extends Parameterized {
 				} else {
 					result.get();
 				}
-				step.complete();
+				step.complete(true);
 				return;
 			} catch (InterruptedException ie) {
-				step.complete();
+				step.complete(false);
 				throw ie;
 			} catch (TimeoutException te) {
 				result.cancel(true);
-				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
-					step.complete();
+				if (step.getTimesTried() > step.getMaxRetries() && !step.isOptional()) {
+					step.complete(false);
 					throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
 																Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 				}
 			} catch (ExecutionException ee) {
-				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
-					step.complete();
+				if (step.getTimesTried() > step.getMaxRetries() && !step.isOptional()) {
+					step.complete(false);
 					throw ee;
 				}
 			} finally {
@@ -341,7 +338,6 @@ public class Workflow extends Parameterized {
 			waitBeforeRetry(step);
 			step.rollback();
 		}
-		currstepTries.set(0);		
 	}
 	
 	/**
