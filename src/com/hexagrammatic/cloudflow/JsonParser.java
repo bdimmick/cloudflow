@@ -280,7 +280,14 @@ public class JsonParser {
 						step.setOptional(je.getAsBoolean());
 					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'optional' value.", je.toString()));					
 				}
-				
+
+				je = obj.get("alwaysRun");
+				if (je!=null && !je.isJsonNull()) {
+					if (je.isJsonPrimitive() && je.getAsJsonPrimitive().isBoolean()) {						
+						step.setAlwaysRun(je.getAsBoolean());
+					} else throw new WorkflowCreationException(String.format("Provided JSON step definition '%s' supplies a non-primitive 'alwaysRun' value.", je.toString()));					
+				}
+
 				for (final Map.Entry<String, JsonElement> entry: obj.entrySet()) {						
 					JsonElement element = entry.getValue();						
 					if (element == null) {

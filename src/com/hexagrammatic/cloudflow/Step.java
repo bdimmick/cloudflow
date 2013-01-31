@@ -25,7 +25,11 @@ public abstract class Step extends Parameterized {
 	private long waitBetweenTriesValue = -1;
 	private TimeUnit waitBetweenTriesUnits = TimeUnit.SECONDS;
 	private boolean optional = false;
-
+	private boolean alwaysRun = false;
+	private volatile boolean completed = false;
+	private volatile long startTime = -1;
+	private volatile long endTime = -1;
+		
 	/**
 	 * Gets the name of this step.
 	 * @return the name of the step; if unset, the 'simple name' of the class is used
@@ -281,6 +285,25 @@ public abstract class Step extends Parameterized {
 	}
 
 	/**
+	 * Determines if this step is <i>always</i> run.  "Always run" steps are run like any other steps,
+	 * even if the workflow has already failed, either through timeout or an exceptional case.
+	 * Steps are not "always run" by default.
+	 * @return <code>true</code> if the step should always be run, <code>false</code> otherwise.
+	 */
+	public boolean isAlwaysRun() {
+		return alwaysRun;
+	}
+
+	/**
+	 * Sets if this step should <i>always</i> be run.  "Always run" steps are run like any other steps,
+	 * even if the workflow has already failed, either through timeout or an exceptional case.
+	 * @return <code>true</code> if this step should always be run, <code>false</code> if this step should not be run if the workflow has failed.
+	 */
+	public void setAlwaysRun(boolean alwaysRun) {
+		this.alwaysRun = alwaysRun;
+	}
+
+	/**
 	 * Body of step execution logic.  Implementors must override this method and implement whatever
 	 * the step has to do.  Implementors may feel free to let unchecked exceptions
 	 * be thrown outside of this class, as the framework will pick them up and handle them properly
@@ -288,4 +311,47 @@ public abstract class Step extends Parameterized {
 	 * unchecked exception out of the body of the workflow's <code>execute()</code> call to let callers handle.
 	 */
 	protected abstract void execute() throws InterruptedException;
+	
+	/**
+	 * Returns if this step has completed.
+	 * @return <code>true</code> if the step has completed, <code>false</code> otherwise.
+	 */
+	public boolean isCompleted() {
+		return completed;
+	}
+	
+	
+	/**
+	 * Returns how long this step ran or has been running, in milliseconds.  If the step is currently running, 
+	 * this returns the current running time of this step; if the step has not started, -1 is returned;
+	 * otherwise the total time taken to run the step is returned.  
+	 * @return how long the step has run or ran, or -1 if the step has not started.
+	 */
+	public long getTimeRunning() {
+		if (startTime == -1) {
+			return -1;
+		} else {
+			if (completed) {
+				return endTime - startTime;
+			} else {
+				return System.currentTimeMillis() - startTime;
+			}
+		}
+	}
+	
+	/**
+	 * Completes this step.  This marks it as completed and records the time this step ended.
+	 */
+	final void complete() {
+		this.endTime = System.currentTimeMillis();
+		this.completed = true;
+	}
+	
+	/**
+	 * Starts this step.  This marks it as not completed and records the time this step started.
+	 */
+	final void start() {
+		this.completed = false;
+		this.startTime = System.currentTimeMillis();
+	}
 }

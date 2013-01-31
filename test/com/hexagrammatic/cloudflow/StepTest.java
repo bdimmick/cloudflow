@@ -292,5 +292,25 @@ public class StepTest {
 		assertTrue(step.hasParameter(key));
 	}
 
+	@Test
+	public void testStepStartEndAndTimeRunning() throws Exception{
+		assertEquals(-1, step.getTimeRunning());
+		step.start();
+		Thread.sleep(2);		
+		assertFalse(step.isCompleted());
+		
+		long t = step.getTimeRunning();
+		assertTrue(t > 0);
+		Thread.sleep(2);
+		assertFalse(t == step.getTimeRunning());
+		
+		step.complete();
+		assertTrue(step.isCompleted());
+		
+		t = step.getTimeRunning();
+		assertTrue(t > 0);
+		Thread.sleep(2);
+		assertEquals(t, step.getTimeRunning());
+	}
 	
 }

@@ -162,7 +162,89 @@ public class WorkflowTest {
 			assertTrue(String.format("Step #%d did not run.", i), ran[i].get());
 		}
 	}
-	
+
+	@Test
+	public void testUnsuccessfulSimpleWorkflow() throws TimeoutException, InterruptedException {
+		final Workflow workflow = new Workflow();
+		final AtomicBoolean[] ran = new AtomicBoolean[20];
+		final int failOn = 11;
+		for (int i=0; i<ran.length; i++) {
+			final int j = i;
+			ran[j]=new AtomicBoolean();
+			final Step step = new Step() {			
+				@Override
+				public void execute() {
+					if (j < failOn) {
+						ran[j].set(true);
+					} else {
+						throw new IllegalStateException();
+					}
+				}
+			};
+			workflow.add(step);
+		}
+		
+		try {		
+			workflow.execute();
+			fail("Expected exception not thrown during execution.");
+		} catch (IllegalStateException ise) {}
+			
+		for (int i=0; i<ran.length; i++) {
+			if (i < failOn) {
+				assertTrue(String.format("Step #%d did not run.", i), ran[i].get());
+			} else {
+				assertFalse(String.format("Step #%d did ran when it was not supposed to.", i), ran[i].get());
+			}
+		}
+	}
+
+	@Test
+	public void testUnsuccessfulSimpleWorkflowWithAlwaysRunSteps() throws TimeoutException, InterruptedException {
+		final Workflow workflow = new Workflow();
+		final AtomicBoolean[] ran = new AtomicBoolean[20];
+		final int failOn = 11;
+		for (int i=0; i<ran.length; i++) {
+			final int j = i;
+			ran[j]=new AtomicBoolean();
+			final Step step = new Step() {			
+				@Override
+				public void execute() {
+					if (j < failOn) {
+						ran[j].set(true);
+					} else {
+						throw new IllegalStateException();
+					}
+				}
+			};
+			workflow.add(step);
+		}
+
+		final AtomicBoolean alwaysRan = new AtomicBoolean(false);
+		final Step always = new Step() {			
+			@Override
+			protected void execute() throws InterruptedException {
+				alwaysRan.set(true);
+			}
+		};
+		always.setAlwaysRun(true);
+		workflow.add(always);
+		
+		try {		
+			workflow.execute();
+			fail("Expected exception not thrown during execution.");
+		} catch (IllegalStateException ise) {}
+
+		for (int i=0; i<ran.length; i++) {
+			if (i < failOn) {
+				assertTrue(String.format("Step #%d did not run.", i), ran[i].get());
+			} else {
+				assertFalse(String.format("Step #%d did ran when it was not supposed to.", i), ran[i].get());
+			}
+		}
+		
+		assertTrue("The always-run steop did not run.", alwaysRan.get());
+	}
+
 	
 	
 	@Test(expected=TimeoutException.class)
@@ -272,6 +354,7 @@ public class WorkflowTest {
 		workflow.add(step);
 		workflow.execute();
 		assertTrue(ran.get());
+		assertTrue(step.isCompleted());
 	}
 	
 	@Test
@@ -291,6 +374,7 @@ public class WorkflowTest {
 		workflow.execute();
 		assertEquals(2, count.get());
 		assertEquals(0L, totalTimeRetryWaiting.get());
+		assertTrue(step.isCompleted());
 	}
 
 	@Test
@@ -312,6 +396,7 @@ public class WorkflowTest {
 		workflow.execute();		
 		assertEquals(2, count.get());
 		assertEquals(step.getWaitBetweenTriesValue(), totalTimeRetryWaiting.get());
+		assertTrue(step.isCompleted());
 	}
 
 	@Test
@@ -335,6 +420,7 @@ public class WorkflowTest {
 		workflow.execute();
 		assertEquals(2, count.get());
 		assertEquals(step.getWaitBetweenTriesValue(), totalTimeRetryWaiting.get());
+		assertTrue(step.isCompleted());
 	}
 	
 	@Test
@@ -360,9 +446,11 @@ public class WorkflowTest {
 			});			
 			Thread.sleep(100);
 			assertTrue(workflow.isExecuting());
+			assertFalse(step.isCompleted());
 			workflow.halt();
 			Thread.sleep(100);
 			assertFalse(workflow.isExecuting());
+			assertTrue(step.isCompleted());
 			assertFalse(finished.get());			
 		} finally {
 			pool.shutdownNow();

@@ -128,6 +128,18 @@ public class JsonParserTest {
 	}
 
 	@Test
+	public void testStepCreationWithAlwaysRunAssignment() throws Exception {	
+		final boolean value = true;
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("alwaysRun", new JsonPrimitive(value));
+		final Step step = parser.populateStep(obj);
+		assertNotNull(step);
+		assertEquals(SimpleStep.class, step.getClass());
+		assertEquals(value, step.isAlwaysRun());		
+	}
+	
+	@Test
 	public void testStepCreationWithNameAssignment() throws Exception {	
 		final String value = UUID.randomUUID().toString();
 		final JsonObject obj = new JsonObject();
@@ -264,6 +276,13 @@ public class JsonParserTest {
 		parser.populateWorkflow(obj);
 	}
 	
+	@Test(expected=WorkflowCreationException.class)
+	public void testWorkflowCreationWitAlwaysRanNonPrimitive() throws Exception {
+		final JsonObject obj = new JsonObject();
+		obj.add("alwaysRun", new JsonArray());
+		parser.populateWorkflow(obj);
+	}
+
 	@Test(expected=WorkflowCreationException.class)
 	public void testWorkflowCreationWithWaitBetweenTriesNonPrimitive() throws Exception {
 		final JsonObject obj = new JsonObject();

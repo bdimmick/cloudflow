@@ -42,6 +42,7 @@ public class Workflow extends Parameterized {
 	private TimeUnit timeoutUnits = TimeUnit.SECONDS;
 	private ExecutorService executor = null;
 	private AtomicBoolean executing = new AtomicBoolean(false);
+	private AtomicBoolean successful = new AtomicBoolean(false);
 	private AtomicReference<Future<Void>> workflowFuture = new AtomicReference<Future<Void>>();
 	private AtomicReference<Future<Void>> currstepFuture = new AtomicReference<Future<Void>>();
 	private AtomicReference<Step> currstep = new AtomicReference<Step>();
@@ -158,6 +159,14 @@ public class Workflow extends Parameterized {
 	}
 	
 	/**
+	 * Determines if the execution of this workflow was successful.
+	 * @return <code>true</code> if the workflow has executed and was successful, <code>false</code> otherwise.
+	 */
+	public final boolean isSuccessful() {
+		return this.successful.get();
+	}
+	
+	/**
 	 * Gets a reference to the current step being executed.
 	 * @return the current step or <code>null</code> if no step is being executed.
 	 */
@@ -247,8 +256,32 @@ public class Workflow extends Parameterized {
 	 * @throws InterruptedException if the step is interrupted while being executed.
 	 */
 	private final void executeSteps() throws TimeoutException, ExecutionException, InterruptedException {
+		TimeoutException te = null;
+		ExecutionException ee = null;
+
+		boolean go = true;
 		for (final Step step: steps) {
-			executeStep(step);
+			try {
+				if (go || step.isAlwaysRun()) {
+					executeStep(step);
+				}
+			} catch (final ExecutionException e) {
+				successful.set(false);
+				go = false;
+				ee = e;
+			} catch (final TimeoutException t) {
+				successful.set(false);
+				go = false;
+				te = t;
+			}
+		}
+		
+		if (ee != null) {			
+			throw ee;
+		} else if (te != null) {			
+			throw te;
+		} else {
+			successful.set(true);
 		}
 	}
 
@@ -262,7 +295,8 @@ public class Workflow extends Parameterized {
 	private final void executeStep(final Step step)  throws TimeoutException, ExecutionException, InterruptedException {
 		if (step == null) return;
 		currstepTries.set(0);
-		while (currstepTries.get() <= step.getMaxRetries()) {
+		while (currstepTries.get() <= step.getMaxRetries()) {			
+			step.start();
 			step.snapshot();
 			currstepTries.incrementAndGet();
 			final Callable<Void> call = new Callable<Void>() {			
@@ -282,15 +316,23 @@ public class Workflow extends Parameterized {
 				} else {
 					result.get();
 				}
+				step.complete();
 				return;
+			} catch (InterruptedException ie) {
+				step.complete();
+				throw ie;
 			} catch (TimeoutException te) {
 				result.cancel(true);
 				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
+					step.complete();
 					throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
 																Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 				}
 			} catch (ExecutionException ee) {
-				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) throw ee;
+				if (currstepTries.get() > step.getMaxRetries() && !step.isOptional()) {
+					step.complete();
+					throw ee;
+				}
 			} finally {
 				result.cancel(true);
 				currstepFuture.set(null);
