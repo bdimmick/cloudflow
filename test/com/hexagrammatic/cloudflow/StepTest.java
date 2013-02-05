@@ -304,7 +304,7 @@ public class StepTest {
 		Thread.sleep(2);
 		assertFalse(t == step.getTimeRunning());
 				
-		step.complete(true);
+		step.complete();
 		assertTrue(step.isCompleted());
 		assertTrue(step.isSuccessful());
 		

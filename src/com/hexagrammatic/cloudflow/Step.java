@@ -1,7 +1,7 @@
 package com.hexagrammatic.cloudflow;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -28,10 +28,11 @@ public abstract class Step extends Parameterized {
 	private boolean optional = false;
 	private boolean alwaysRun = false;
 	private volatile boolean completed = false;
-	private volatile boolean successful = false;
+	private volatile boolean skipped = false;
 	private volatile long startTime = -1;
 	private volatile long endTime = -1;
 	private volatile int tries = 0;	
+	private AtomicReference<Throwable> failureCause = new AtomicReference<Throwable>();
 		
 	/**
 	 * Gets the name of this step.
@@ -300,7 +301,6 @@ public abstract class Step extends Parameterized {
 	/**
 	 * Sets if this step should <i>always</i> be run.  "Always run" steps are run like any other steps,
 	 * even if the workflow has already failed, either through timeout or an exceptional case.
-	 * @return <code>true</code> if this step should always be run, <code>false</code> if this step should not be run if the workflow has failed.
 	 */
 	public void setAlwaysRun(boolean alwaysRun) {
 		this.alwaysRun = alwaysRun;
@@ -328,9 +328,17 @@ public abstract class Step extends Parameterized {
 	 * @return <code>true</code> if the step did not time out or throw and exception, <code>false</code> otherwise.
 	 */
 	public boolean isSuccessful() {
-		return successful;
+		return failureCause.get() == null;
 	}
 	
+	/**
+	 * Returns if this step was skipped.  Steps are skipped when they are encountered after a previous step
+	 * has failed and are not marked as 'always run'.
+	 * @return <code>true</code> if this step was skipped, <code>false</code> otherwise.
+	 */
+	public boolean wasSkipped() {
+		return skipped;
+	}
 	
 	/**
 	 * Returns how long this step ran or has been running, in milliseconds.  If the step is currently running, 
@@ -351,6 +359,22 @@ public abstract class Step extends Parameterized {
 	}
 	
 	/**
+	 * Returns when this step was started.
+	 * @return the time this step was started, in milliseconds since the computational epoch, or -1 if this step has not been started.
+	 */
+	public long getStartTime() {
+		return startTime;
+	}
+
+	/**
+	 * Returns when this step was ended.
+	 * @return the time this step was ended, in milliseconds since the computational epoch, or -1 if this step has not been ended.
+	 */
+	public long getEndTime() {
+		return endTime;
+	}
+	
+	/**
 	 * Gets the number of times this specific step instance has been tried, which is 
 	 * equivalent to the number of times <code>execute()</code> has been called.
 	 * @return the number of times <code>execute()</code> has been called.
@@ -358,14 +382,32 @@ public abstract class Step extends Parameterized {
 	public int getTimesTried() {
 		return tries;
 	}
+
+	/**
+	 * Completes this step.  This marks it as completed, successful, and records the time this step ended.
+	 */
+	final void complete() {
+		complete(null);
+	}
 	
 	/**
 	 * Completes this step.  This marks it as completed and records the time this step ended.
+	 * @param failure the reason this step has failed; if <code>null</code> this step is marked as successful.
 	 */
-	final void complete(final boolean successful) {
+	final void complete(final Throwable failure) {
 		this.endTime = System.currentTimeMillis();
 		this.completed = true;
-		this.successful = successful;
+		this.failureCause.set(failure);
+	}
+	
+	/**
+	 * Marks this step as skipped.  This marks it as completed and recorded the time the step was skipped as both the start and end time.
+	 */
+	final void skip() {
+		this.completed = true;
+		this.skipped = true;
+		this.startTime = System.currentTimeMillis();
+		this.endTime = this.startTime;
 	}
 	
 	/**

@@ -12,7 +12,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.Validate;
@@ -263,6 +262,8 @@ public class Workflow extends Parameterized {
 			try {
 				if (go || step.isAlwaysRun()) {
 					executeStep(step);
+				} else {
+					step.skip();
 				}
 			} catch (final ExecutionException e) {
 				successful.set(false);
@@ -313,21 +314,21 @@ public class Workflow extends Parameterized {
 				} else {
 					result.get();
 				}
-				step.complete(true);
+				step.complete();
 				return;
 			} catch (InterruptedException ie) {
-				step.complete(false);
+				step.complete(ie);
 				throw ie;
 			} catch (TimeoutException te) {
 				result.cancel(true);
 				if (step.getTimesTried() > step.getMaxRetries() && !step.isOptional()) {
-					step.complete(false);
+					step.complete(te);
 					throw new TimeoutException(String.format("Execution of workflow step '%s' timed out after %s", step.getName(), 
 																Utils.createTimeTuple(step.getTimeoutValue(), step.getTimeoutUnits())));
 				}
 			} catch (ExecutionException ee) {
 				if (step.getTimesTried() > step.getMaxRetries() && !step.isOptional()) {
-					step.complete(false);
+					step.complete(ee.getCause());
 					throw ee;
 				}
 			} finally {
