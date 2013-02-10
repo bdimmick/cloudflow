@@ -189,7 +189,7 @@ public class Workflow extends Parameterized {
 	 * @throws RuntimeException thrown if a step decides to 'leak' a RuntimeException out of its <code>execute()</code> method.  
 	 */
 	public final void execute() throws TimeoutException, InterruptedException {
-		executor = Executors.newFixedThreadPool(2,
+		executor = Executors.newCachedThreadPool(
 					new ThreadFactory() {
 						@Override
 						public Thread newThread(final Runnable r) {
