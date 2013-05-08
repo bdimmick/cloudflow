@@ -68,7 +68,7 @@ public class JsonParserTest {
 	}
 
 	@Test
-	public void testStepCreationWithValueAssignment() throws Exception {	
+	public void testStepCreationWithStringParameterAssignment() throws Exception {	
 		final String value = "value";
 		final JsonObject obj = new JsonObject();
 		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
@@ -78,6 +78,45 @@ public class JsonParserTest {
 		assertEquals(SimpleStep.class, step.getClass());
 		assertTrue(step.hasParameter("parameter"));
 		assertEquals(value, step.getParameter("parameter"));
+	}
+
+	@Test
+	public void testStepCreationWithBooleanParameterAssignment() throws Exception {	
+		final Boolean value = true;
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("parameter", new JsonPrimitive(value));
+		final Step step = parser.populateStep(obj);
+		assertNotNull(step);
+		assertEquals(SimpleStep.class, step.getClass());
+		assertTrue(step.hasParameter("parameter"));
+		assertEquals(value, step.getParameter("parameter"));
+	}
+
+	@Test
+	public void testStepCreationWithLongNumberParameterAssignment() throws Exception {	
+		final Number value = 1L;
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("parameter", new JsonPrimitive(value));
+		final Step step = parser.populateStep(obj);
+		assertNotNull(step);
+		assertEquals(SimpleStep.class, step.getClass());
+		assertTrue(step.hasParameter("parameter"));
+		assertEquals(value.longValue(), ((Number)step.getParameter("parameter")).longValue());
+	}
+
+	@Test
+	public void testStepCreationWithDoubleNumberParameterAssignment() throws Exception {	
+		final Number value = 1L;
+		final JsonObject obj = new JsonObject();
+		obj.add("class", new JsonPrimitive(SimpleStep.class.getName()));
+		obj.add("parameter", new JsonPrimitive(value));
+		final Step step = parser.populateStep(obj);
+		assertNotNull(step);
+		assertEquals(SimpleStep.class, step.getClass());
+		assertTrue(step.hasParameter("parameter"));
+		assertEquals(value.doubleValue(), ((Number)step.getParameter("parameter")).doubleValue(), 0.0);
 	}
 
 	//JSON Arrays are unsupported currently.
@@ -291,7 +330,7 @@ public class JsonParserTest {
 	}
 
 	@Test
-	public void testWorkflowCreationWithPrimitiveParameter() throws Exception {
+	public void testWorkflowCreationWithPrimitiveStringParameter() throws Exception {
 		final JsonObject obj = new JsonObject();
 		final String key = "param";
 		final String value = "value";
@@ -301,6 +340,40 @@ public class JsonParserTest {
 		assertEquals(value, workflow.getParameter(key));
 	}
 
+	@Test
+	public void testWorkflowCreationWithPrimitiveBooleanParameter() throws Exception {
+		final JsonObject obj = new JsonObject();
+		final String key = "param";
+		final Boolean value = true;
+		obj.add(key, new JsonPrimitive(value));
+		final Workflow workflow = parser.populateWorkflow(obj);
+		assertTrue(workflow.hasParameter(key));
+		assertEquals(value, workflow.getParameter(key));
+	}
+
+	@Test
+	public void testWorkflowCreationWithPrimitiveLongNumberParameter() throws Exception {
+		final JsonObject obj = new JsonObject();
+		final String key = "param";
+		final Long value = 1L;
+		obj.add(key, new JsonPrimitive(value));
+		final Workflow workflow = parser.populateWorkflow(obj);
+		assertTrue(workflow.hasParameter(key));
+		assertEquals(value.longValue(), ((Number)workflow.getParameter(key)).longValue());
+	}
+
+	@Test
+	public void testWorkflowCreationWithPrimitiveDoubleNumberParameter() throws Exception {
+		final JsonObject obj = new JsonObject();
+		final String key = "param";
+		final Double value = 1.0d;
+		obj.add(key, new JsonPrimitive(value));
+		final Workflow workflow = parser.populateWorkflow(obj);
+		assertTrue(workflow.hasParameter(key));
+		assertEquals(value.doubleValue(), ((Number)workflow.getParameter(key)).doubleValue(), 0.0);
+	}
+
+	
 	@Test
 	public void testWorkflowCreationWithNullParameter() throws Exception {
 		final JsonObject obj = new JsonObject();

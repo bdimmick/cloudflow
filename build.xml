@@ -3,7 +3,7 @@
 		A simple Java in-process workflow intended to be used by distributed and virtualized workers.
     </description>
 
-	<property name="version"		value="2013.02"/>
+	<property name="version"		value="2013.05"/>
 	<property name="dir.dest"   	value="build"/>
 	<property name="dir.doc" 		value="javadoc"/>
 	<property name="dir.src"		value="src"/>

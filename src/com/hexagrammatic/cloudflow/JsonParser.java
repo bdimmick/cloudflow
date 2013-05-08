@@ -10,6 +10,7 @@ import org.apache.commons.lang.Validate;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 /**
  * Type to parse and create workflow instances from various input types in JSON format.  The expected JSON data format 
@@ -202,7 +203,7 @@ public class JsonParser {
 				} else if (element.isJsonNull()) {
 					workflow.addParameter(entry.getKey(), null);
 				} else if (element.isJsonPrimitive()) {
-					workflow.addParameter(entry.getKey(), element.getAsString());
+					workflow.addParameter(entry.getKey(), translatePrimitive(element.getAsJsonPrimitive()));
 				} else {
 					throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on workflow - element is a %s.",
 							element.toString(), entry.getKey(), element.getClass().getSimpleName()));
@@ -295,8 +296,8 @@ public class JsonParser {
 					} else if (element.isJsonNull()) {
 						step.addParameter(entry.getKey(), null);
 					} else if (element.isJsonPrimitive()) {
-						step.addParameter(entry.getKey(), element.getAsString());
-					} else if (element.isJsonArray()) {
+						step.addParameter(entry.getKey(), translatePrimitive(element.getAsJsonPrimitive()));
+					} else {
 						throw new WorkflowCreationException(String.format("Cannot assign JSON value '%s' as a primitive to property '%s' on step '%s' - element is a %s.",
 								element.toString(), entry.getKey(), step.getName(), element.getClass().getSimpleName()));
 					}
@@ -313,5 +314,15 @@ public class JsonParser {
 			throw new WorkflowCreationException(String.format("Step class '%s' cannot be constructed due to access restrictions.", classname.getAsString()), e);
 		}
 		return step;
-	}	
+	}
+	
+	private Object translatePrimitive(final JsonPrimitive primitive) {
+		if (primitive.isBoolean()) {
+			return primitive.getAsBoolean();
+		} else if (primitive.isNumber()) {
+			return primitive.getAsNumber();
+		} else {
+			return primitive.getAsString();
+		}
+	}
 }
